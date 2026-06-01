@@ -1,125 +1,89 @@
-# Web Search MCP Server for use with Local LLMs
+# Secret MCP
 
-A TypeScript MCP (Model Context Protocol) server that provides comprehensive web search capabilities using direct connections (no API keys required) with multiple tools for different use cases.
+웹 검색, 페이지 본문 추출, GDWEB 디자인 레퍼런스 검색을 제공하는 TypeScript 기반 MCP(Model Context Protocol) 서버입니다.
 
-## Features
+기본 웹 검색은 Bing, Brave, DuckDuckGo를 순서대로 시도하고, GDWEB 전용 도구는 디자인 레퍼런스 검색에 맞춰 수상작/연도 필터와 원본 사이트 링크 추출을 제공합니다.
 
-- **Multi-Engine Web Search**: Prioritises Bing > Brave > DuckDuckGo for optimal reliability and performance
-- **Full Page Content Extraction**: Fetches and extracts complete page content from search results
-- **Multiple Search Tools**: Three specialised tools for different use cases
-- **Smart Request Strategy**: Switches between playwright browesrs and fast axios requests to ensure results are returned
-- **Concurrent Processing**: Extracts content from multiple pages simultaneously
+## 주요 기능
 
-## How It Works
+- `full-web-search`: 웹 검색 후 상위 결과의 본문까지 추출
+- `get-web-search-summaries`: 검색 결과 제목, URL, 설명만 빠르게 반환
+- `get-single-web-page-content`: 특정 URL의 본문 추출
+- `search-gdweb-designs`: GDWEB 디자인 수상작 검색
+- `get-gdweb-design-site`: GDWEB 상세 페이지에서 실제 디자인 사이트 URL 추출
 
-The server provides three specialised tools for different web search needs:
+## GDWEB 검색 정책
 
-### 1. `full-web-search` (Main Tool)
-When a comprehensive search is requested, the server uses an **optimised search strategy**:
-1. **Browser-based Bing Search** - Primary method using dedicated Chromium instance
-2. **Browser-based Brave Search** - Secondary option using dedicated Firefox instance
-3. **Axios DuckDuckGo Search** - Final fallback using traditional HTTP
-4. **Dedicated browser isolation**: Each search engine gets its own browser instance with automatic cleanup
-5. **Content extraction**: Tries axios first, then falls back to browser with human behavior simulation
-6. **Concurrent processing**: Extracts content from multiple pages simultaneously with timeout protection
-7. **HTTP/2 error recovery**: Automatically falls back to HTTP/1.1 when protocol errors occur
+디자인은 시간이 지나면 트렌드성이 떨어지기 때문에 GDWEB 검색은 최신성 필터를 강하게 적용합니다.
 
-### 2. `get-web-search-summaries` (Lightweight Alternative)
-For quick search results without full content extraction:
-1. Performs the same optimised multi-engine search as `full-web-search`
-2. Returns only the search result snippets/descriptions
-3. Does not follow links to extract full page content
+- `year`를 생략하면 실행 시점의 현재 연도를 사용합니다.
+- 기본적으로 `현재 연도 + 전년도`만 허용합니다.
+- 예: 2026년에 실행하면 2026년, 2025년 결과만 통과합니다.
+- `includePreviousYear: false`를 주면 해당 연도만 허용합니다.
+- 허용 연도 밖 결과는 점수 감점이 아니라 완전히 제외합니다.
+- `awardOnly` 기본값은 `true`이며, 수상명이 없는 결과는 제외합니다.
 
-### 3. `get-single-web-page-content` (Utility Tool)
-For extracting content from a specific webpage:
-1. Takes a single URL as input
-2. Follows the URL and extracts the main page content
-3. Removes navigation, ads, and other non-content elements
+## 설치
 
-## Compatibility
+요구 사항:
 
-This MCP server has been developed and tested with **LM Studio** and **LibreChat**. It has not been tested with other MCP clients.
+- Node.js 18 이상
+- npm
 
-### Model Compatibility
-**Important:** Prioritise using more recent models designated for tool use. 
+```bash
+git clone https://github.com/yyeongjin/secret_mcp.git
+cd secret_mcp
+npm install
+npx playwright install chromium firefox
+npm run build
+```
 
-Older models (even those with tool use specified) may not work or may work erratically. This seems to be the case with Llama and Deepseek. Qwen3 and Gemma 3 currently have the best restults.
+Playwright 브라우저 설치는 Bing/Brave 기반 검색에 필요합니다. 설치하지 않아도 DuckDuckGo fallback은 동작할 수 있지만 검색 품질이 크게 떨어질 수 있습니다.
 
-- ✅ Works well with: **Qwen3**
-- ✅ Works well with: **Gemma 3**
-- ✅ Works with: **Llama 3.2**
-- ✅ Works with: Recent **Llama 3.1** (e.g 3.1 swallow-8B)
-- ✅ Works with: Recent **Deepseek R1** (e.g 0528 works)
-- ⚠️ May have issues with: Some versions of **Llama** and **Deepseek R1**
-- ❌ May not work with: Older versions of **Llama** and **Deepseek R1**
+## MCP 설정
 
-## Installation (Recommended)
+MCP 클라이언트 설정에 빌드된 `dist/index.js`를 등록합니다.
 
-**Requirements:**
-- Node.js 18.0.0 or higher
-- npm 8.0.0 or higher
-
-1. Download the latest release zip file from the [Releases page](https://github.com/mrkrsl/web-search-mcp/releases)
-2. Extract the zip file to a location on your system (e.g., `~/mcp-servers/web-search-mcp/`)
-3. **Open a terminal in the extracted folder and run:**
-   ```bash
-   npm install
-   npx playwright install
-   npm run build
-   ```
-   This will create a `node_modules` folder with all required dependencies, install Playwright browsers, and build the project.
-
-   **Note:** You must run `npm install` in the root of the extracted folder (not in `dist/`).
-4. Configure your `mcp.json` to point to the extracted `dist/index.js` file:
+Windows 예시:
 
 ```json
 {
   "mcpServers": {
-    "web-search": {
+    "secret-mcp": {
       "command": "node",
-      "args": ["/path/to/extracted/web-search-mcp/dist/index.js"]
+      "args": [
+        "C:\\path\\to\\secret_mcp\\dist\\index.js"
+      ]
     }
   }
 }
 ```
-**Example paths:**
-- macOS/Linux: `~/mcp-servers/web-search-mcp/dist/index.js`
-- Windows: `C:\\mcp-servers\\web-search-mcp\\dist\\index.js`
 
-In LibreChat, you can include the MCP server in the librechat.yaml. If you are running LibreChat in Docker, you must first mount your local directory in docker-compose.override.yml.
-
-in `docker-compose.override.yml`:
-```yaml
-services:
-  api:
-    volumes:
-    - type: bind
-      source: /path/to/your/mcp/directory
-      target: /app/mcp
-```
-in `librechat.yaml`:
-```yaml
-mcpServers:
-  web-search:
-    type: stdio
-    command: node
-    args:
-    - /app/mcp/web-search-mcp/dist/index.js
-    serverInstructions: true
-```
-
-**Troubleshooting:**
-- If `npm install` fails, try updating Node.js to version 18+ and npm to version 8+
-- If `npm run build` fails, ensure you have the latest Node.js version installed
-- For older Node.js versions, you may need to use an older release of this project
-- **Content Length Issues:** If you experience odd behavior due to content length limits, try setting `"MAX_CONTENT_LENGTH": "10000"`, or another value, in your `mcp.json` environment variables:
+macOS/Linux 예시:
 
 ```json
 {
   "mcpServers": {
-    "web-search": {
+    "secret-mcp": {
       "command": "node",
-      "args": ["/path/to/web-search-mcp/dist/index.js"],
+      "args": [
+        "/path/to/secret_mcp/dist/index.js"
+      ]
+    }
+  }
+}
+```
+
+환경변수까지 같이 넣는 예시:
+
+```json
+{
+  "mcpServers": {
+    "secret-mcp": {
+      "command": "node",
+      "args": [
+        "C:\\path\\to\\secret_mcp\\dist\\index.js"
+      ],
       "env": {
         "MAX_CONTENT_LENGTH": "10000",
         "BROWSER_HEADLESS": "true",
@@ -131,144 +95,264 @@ mcpServers:
 }
 ```
 
-## Environment Variables
+## 도구 사용 예시
 
-The server supports several environment variables for configuration:
+### 전체 웹 검색
 
-- **`MAX_CONTENT_LENGTH`**: Maximum content length in characters (default: 500000)
-- **`DEFAULT_TIMEOUT`**: Default timeout for requests in milliseconds (default: 6000)
-- **`MAX_BROWSERS`**: Maximum number of browser instances to maintain (default: 3)
-- **`BROWSER_TYPES`**: Comma-separated list of browser types to use (default: 'chromium,firefox', options: chromium, firefox, webkit)
-- **`BROWSER_FALLBACK_THRESHOLD`**: Number of axios failures before using browser fallback (default: 3)
-
-### Search Quality and Engine Selection
-
-- **`ENABLE_RELEVANCE_CHECKING`**: Enable/disable search result quality validation (default: true)
-- **`RELEVANCE_THRESHOLD`**: Minimum quality score for search results (0.0-1.0, default: 0.3)
-- **`FORCE_MULTI_ENGINE_SEARCH`**: Try all search engines and return best results (default: false)
-- **`DEBUG_BROWSER_LIFECYCLE`**: Enable detailed browser lifecycle logging for debugging (default: false)
-
-## Troubleshooting
-
-### Slow Response Times
-- **Optimised timeouts**: Default timeout reduced to 6 seconds with concurrent processing for faster results
-- **Concurrent extraction**: Content is now extracted from multiple pages simultaneously
-- **Reduce timeouts further**: Set `DEFAULT_TIMEOUT=4000` for even faster responses (may reduce success rate)
-- **Use fewer browsers**: Set `MAX_BROWSERS=1` to reduce memory usage
-
-### Search Failures
-- **Check browser installation**: Run `npx playwright install` to ensure browsers are available
-- **Try headless mode**: Ensure `BROWSER_HEADLESS=true` (default) for server environments
-- **Network restrictions**: Some networks block browser automation - try different network or VPN
-- **HTTP/2 issues**: The server automatically handles HTTP/2 protocol errors with fallback to HTTP/1.1
-
-### Search Quality Issues
-- **Enable quality checking**: Set `ENABLE_RELEVANCE_CHECKING=true` (enabled by default)
-- **Adjust quality threshold**: Set `RELEVANCE_THRESHOLD=0.5` for stricter quality requirements
-- **Force multi-engine search**: Set `FORCE_MULTI_ENGINE_SEARCH=true` to try all engines and return the best results
-
-### Memory Usage
-- **Automatic cleanup**: Browsers are automatically cleaned up after each operation to prevent memory leaks
-- **Limit browsers**: Reduce `MAX_BROWSERS` (default: 3)
-- **EventEmitter warnings**: Fixed - browsers are properly closed to prevent listener accumulation
-
-## For Development
-```bash
-git clone https://github.com/mrkrsl/web-search-mcp.git
-cd web-search-mcp
-npm install
-npx playwright install
-npm run build
-```
-
-## Development
-
-```bash
-npm run dev    # Development with hot reload
-npm run build  # Build TypeScript to JavaScript
-npm run lint   # Run ESLint
-npm run format # Run Prettier
-```
-
-## MCP Tools
-
-This server provides three specialised tools for different web search needs:
-
-### 1. `full-web-search` (Main Tool)
-The most comprehensive web search tool that:
-1. Takes a search query and optional number of results (1-10, default 5)
-2. Performs a web search (tries Bing, then Brave, then DuckDuckGo if needed)
-3. Fetches full page content from each result URL with concurrent processing
-4. Returns structured data with search results and extracted content
-5. **Enhanced reliability**: HTTP/2 error recovery, reduced timeouts, and better error handling
-
-**Example Usage:**
 ```json
 {
   "name": "full-web-search",
   "arguments": {
-    "query": "TypeScript MCP server",
+    "query": "MCP server TypeScript",
     "limit": 3,
     "includeContent": true
   }
 }
 ```
 
-### 2. `get-web-search-summaries` (Lightweight Alternative)
-A lightweight alternative for quick search results:
-1. Takes a search query and optional number of results (1-10, default 5)
-2. Performs the same optimised multi-engine search as `full-web-search`
-3. Returns only search result snippets/descriptions (no content extraction)
-4. Faster and more efficient for quick research
+### 검색 요약만 가져오기
 
-**Example Usage:**
 ```json
 {
   "name": "get-web-search-summaries",
   "arguments": {
-    "query": "TypeScript MCP server",
+    "query": "latest web design trends",
     "limit": 5
   }
 }
 ```
 
-### 3. `get-single-web-page-content` (Utility Tool)
-A utility tool for extracting content from a specific webpage:
-1. Takes a single URL as input
-2. Follows the URL and extracts the main page content
-3. Removes navigation, ads, and other non-content elements
-4. Useful for getting detailed content from a known webpage
+### 단일 페이지 본문 추출
 
-**Example Usage:**
 ```json
 {
   "name": "get-single-web-page-content",
   "arguments": {
-    "url": "https://example.com/article",
-    "maxContentLength": 5000
+    "url": "https://example.com",
+    "maxContentLength": 10000
   }
 }
 ```
 
-## Standalone Usage
+### GDWEB 디자인 검색
 
-You can also run the server directly:
-```bash
-# If running from source
-npm start
+```json
+{
+  "name": "search-gdweb-designs",
+  "arguments": {
+    "query": "디자인 트렌드 웹사이트",
+    "limit": 5,
+    "awardOnly": true,
+    "includePreviousYear": true
+  }
+}
 ```
 
-## Documentation
+2026년 기준이면 2026년과 2025년 수상작만 반환합니다.
 
-See [API.md](./docs/API.md) for complete technical details.
+특정 연도만 강제하려면:
 
-## License
+```json
+{
+  "name": "search-gdweb-designs",
+  "arguments": {
+    "query": "브랜드 웹사이트",
+    "year": 2026,
+    "includePreviousYear": false
+  }
+}
+```
 
-MIT License - see [LICENSE](./LICENSE) for details.
+### GDWEB 상세에서 원본 사이트 URL 추출
 
-## Feedback
+```json
+{
+  "name": "get-gdweb-design-site",
+  "arguments": {
+    "strNo": "26889",
+    "includeContent": false
+  }
+}
+```
 
-This is an open source project and we welcome feedback! If you encounter any issues or have suggestions for improvements, please:
+GDWEB 상세 URL을 직접 넘길 수도 있습니다.
 
-- Open an issue on GitHub
-- Submit a pull request
+```json
+{
+  "name": "get-gdweb-design-site",
+  "arguments": {
+    "gdwebUrl": "https://www.gdweb.co.kr/sub/view.asp?Txt_fgbn=5&str_no=26889",
+    "includeContent": true,
+    "maxContentLength": 10000
+  }
+}
+```
+
+## 런타임 환경변수
+
+MCP 클라이언트의 `env`에 넣어서 동작을 조정할 수 있습니다.
+
+| 이름 | 기본값 | 설명 |
+| --- | --- | --- |
+| `MAX_CONTENT_LENGTH` | `500000` | 추출할 본문 최대 길이 |
+| `DEFAULT_TIMEOUT` | `6000` | HTTP/브라우저 요청 기본 타임아웃(ms) |
+| `MAX_BROWSERS` | `3` | 유지할 최대 브라우저 수 |
+| `BROWSER_TYPES` | `chromium,firefox` | 사용할 Playwright 브라우저 종류 |
+| `BROWSER_HEADLESS` | `true` | 브라우저를 headless로 실행할지 여부 |
+| `BROWSER_FALLBACK_THRESHOLD` | `3` | axios 실패 후 브라우저 fallback을 사용할 기준 |
+| `ENABLE_RELEVANCE_CHECKING` | `true` | 검색 결과 품질 점수 계산 사용 여부 |
+| `RELEVANCE_THRESHOLD` | `0.3` | 검색 결과 최소 품질 점수 |
+| `FORCE_MULTI_ENGINE_SEARCH` | `false` | 모든 검색엔진을 시도한 뒤 최고 결과 선택 |
+| `DEBUG_BROWSER_LIFECYCLE` | `false` | 브라우저 생명주기 로그 출력 |
+| `DEBUG_BING_SEARCH` | `false` | Bing 검색 디버그 로그 출력 |
+
+## 개발 명령어
+
+```bash
+npm install
+npx playwright install chromium firefox
+npm run build
+npm run lint
+npm run dev
+```
+
+Windows PowerShell 실행 정책 때문에 `npm`이 막히면 `npm.cmd`를 사용합니다.
+
+```powershell
+npm.cmd install
+npx.cmd playwright install chromium firefox
+npm.cmd run build
+```
+
+## GitHub Actions
+
+이 레포에는 세 가지 워크플로가 있습니다.
+
+### CI
+
+파일: `.github/workflows/ci.yml`
+
+실행 시점:
+
+- `main` 브랜치 push
+- `main` 대상 pull request
+- 수동 실행
+
+수행 작업:
+
+- `npm ci`
+- `npm run build`
+- `npm run lint`
+- `npm pack --dry-run`
+
+필요한 GitHub secret 또는 환경변수:
+
+- 없음
+
+### GDWEB Smoke Test
+
+파일: `.github/workflows/gdweb-smoke.yml`
+
+실행 시점:
+
+- 수동 실행만 지원
+
+수동 입력값:
+
+| 이름 | 기본값 | 설명 |
+| --- | --- | --- |
+| `query` | `디자인 트렌드 웹사이트` | GDWEB 검색 쿼리 |
+| `year` | 빈 값 | 대상 연도. 비워두면 현재 연도 사용 |
+
+수행 작업:
+
+- `npm ci`
+- `npx playwright install chromium firefox`
+- `npm run build`
+- GDWEB 검색 smoke test 실행
+
+필요한 GitHub secret 또는 환경변수:
+
+- 없음
+
+주의:
+
+- 실제 검색엔진과 GDWEB에 접근하므로 네트워크 상태나 검색엔진 차단에 따라 실패할 수 있습니다.
+- 이 워크플로는 기본 CI에 넣지 않고 수동 실행으로 분리했습니다.
+
+### Release
+
+파일: `.github/workflows/release.yml`
+
+실행 시점:
+
+- `v*` 태그 push
+- 수동 실행
+
+수동 입력값:
+
+| 이름 | 설명 |
+| --- | --- |
+| `tag` | 릴리스 태그. 예: `v0.3.1` |
+| `prerelease` | GitHub Release를 prerelease로 표시할지 여부 |
+
+수행 작업:
+
+- `npm ci`
+- `npm run build`
+- `npm run lint`
+- `npm pack`
+- GitHub Release 생성 및 `.tgz` 업로드
+
+필요한 GitHub secret 또는 환경변수:
+
+- 별도 secret 없음
+- GitHub Actions가 자동 제공하는 `GITHUB_TOKEN` 사용
+
+필요한 레포 설정:
+
+- GitHub 저장소의 `Settings > Actions > General > Workflow permissions`에서 `Read and write permissions`가 필요할 수 있습니다.
+- `Allow GitHub Actions to create and approve pull requests`는 현재 워크플로에는 필수는 아닙니다.
+
+릴리스 태그 예시:
+
+```bash
+git tag v0.3.1
+git push origin v0.3.1
+```
+
+## Dependabot
+
+파일: `.github/dependabot.yml`
+
+대상:
+
+- npm 의존성
+- GitHub Actions 버전
+
+주기:
+
+- 매주
+
+필요한 secret:
+
+- 없음
+
+## 다른 컴퓨터에서 사용하는 절차
+
+```bash
+git clone https://github.com/yyeongjin/secret_mcp.git
+cd secret_mcp
+npm install
+npx playwright install chromium firefox
+npm run build
+```
+
+그 다음 MCP 클라이언트 설정에서 `dist/index.js`를 지정하면 됩니다.
+
+## 주의사항
+
+- `workflow/` 폴더는 다른 레포에서 가져온 이식용 원본이라 `.gitignore` 처리되어 있습니다.
+- `dist/`는 빌드 산출물이라 git에는 올라가지 않습니다.
+- npm 패키지 tarball에는 `dist`, `docs`, `README.md`, `LICENSE`, `mcp.json`만 포함되도록 `package.json`의 `files` 필드로 제한했습니다.
+- GDWEB은 `robots.txt` 정책상 대량 크롤링보다는 검색 결과로 발견된 상세 페이지를 최소 파싱하는 방식이 안전합니다.
