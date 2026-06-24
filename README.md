@@ -2,6 +2,8 @@
 
 웹 검색, 페이지 본문 추출, GDWEB 디자인 레퍼런스 검색을 제공하는 TypeScript 기반 MCP(Model Context Protocol) 서버입니다.
 
+카카오 MCP로 제공할 목적입니다.
+
 기본 웹 검색은 Bing, Brave, DuckDuckGo를 순서대로 시도하고, GDWEB 전용 도구는 디자인 레퍼런스 검색에 맞춰 수상작/연도 필터와 원본 사이트 링크 추출을 제공합니다.
 
 ## 주요 기능
