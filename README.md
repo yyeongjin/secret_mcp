@@ -16,7 +16,7 @@
 
 ## 문서
 
-- [디자인 공모/어워드 사이트 목록](docs/DESIGN_CONTEST_SITES.md)
+- [디자인 공모/어워드 사이트 목록](tmp/DESIGN_CONTEST_SITES.md)
 
 ## GDWEB 검색 정책
 
