@@ -14,6 +14,10 @@
 - `search-gdweb-designs`: GDWEB 디자인 수상작 검색
 - `get-gdweb-design-site`: GDWEB 상세 페이지에서 실제 디자인 사이트 URL 추출
 
+## 문서
+
+- [디자인 공모/어워드 사이트 목록](docs/DESIGN_CONTEST_SITES.md)
+
 ## GDWEB 검색 정책
 
 디자인은 시간이 지나면 트렌드성이 떨어지기 때문에 GDWEB 검색은 최신성 필터를 강하게 적용합니다.
