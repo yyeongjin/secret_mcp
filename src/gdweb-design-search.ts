@@ -18,6 +18,8 @@ export interface GdwebDesignSearchOptions {
 }
 
 export interface GdwebDesignResult {
+  strNo: string;
+  txtFgbn: string;
   title: string;
   gdwebUrl: string;
   description: string;
@@ -28,7 +30,24 @@ export interface GdwebDesignResult {
   primaryColor: string;
   productionCompany: string;
   imageUrl: string;
+  desktopImageUrl: string;
+  mobileImageUrl: string;
   timestamp: string;
+}
+
+export interface GdwebDesignImage {
+  kind: 'desktop' | 'mobile';
+  url: string;
+  mimeType: 'image/jpeg' | 'image/png';
+  width: number;
+  height: number;
+  byteLength: number;
+  data: string;
+}
+
+export interface GdwebDesignReference {
+  design: GdwebDesignResult;
+  images: GdwebDesignImage[];
 }
 
 interface GdwebSearchCandidate {
@@ -61,6 +80,32 @@ export class GdwebDesignSearch {
       .filter(result => allowedYears.includes(result.registeredYear))
       .filter(result => !awardOnly || result.award.length > 0)
       .slice(0, options.limit);
+  }
+
+  async getDesignReference(gdwebUrl: string): Promise<GdwebDesignReference> {
+    const normalizedUrl = this.normalizeGdwebUrl(gdwebUrl);
+    if (!normalizedUrl) {
+      throw new Error('Invalid GDWEB design URL');
+    }
+
+    const design = await this.parseDetailPage(normalizedUrl);
+    if (!design) {
+      throw new Error('Unable to load GDWEB design details');
+    }
+
+    const requestedImages: Array<{ kind: 'desktop' | 'mobile'; url: string }> = [
+      { kind: 'desktop', url: design.desktopImageUrl },
+      { kind: 'mobile', url: design.mobileImageUrl },
+    ];
+    const images = (await Promise.all(
+      requestedImages.map(image => this.fetchDesignImage(image.kind, image.url))
+    )).filter((image): image is GdwebDesignImage => image !== null);
+
+    if (!images.some(image => image.kind === 'desktop')) {
+      throw new Error('GDWEB desktop reference image is unavailable');
+    }
+
+    return { design, images };
   }
 
   private async searchGdweb(query: string): Promise<GdwebSearchCandidate[]> {
@@ -128,9 +173,15 @@ export class GdwebDesignSearch {
       const registeredYear = this.parseKoreanYear(registeredDate);
       if (!title || !registeredYear) return null;
 
-      const imagePath = $('.view-area .img-box .img-inner > img').last().attr('src') ?? '';
+      const identity = this.getDesignIdentity(url);
+      if (!identity) return null;
+
+      const desktopImageUrl = this.getImageUrl(identity.strNo, '1');
+      const mobileImageUrl = this.getImageUrl(identity.strNo, '3');
 
       return {
+        strNo: identity.strNo,
+        txtFgbn: identity.txtFgbn,
         title,
         gdwebUrl: url,
         description: `${title} - GDWEB selected design`,
@@ -140,7 +191,9 @@ export class GdwebDesignSearch {
         concept: this.getTableValue($, '디자인 컨셉'),
         primaryColor: this.getTableValue($, '주색상'),
         productionCompany: this.getTableValue($, '제작사'),
-        imageUrl: imagePath ? new URL(imagePath, url).toString() : '',
+        imageUrl: desktopImageUrl,
+        desktopImageUrl,
+        mobileImageUrl,
         timestamp: generateTimestamp(),
       };
     } catch (error) {
@@ -152,6 +205,119 @@ export class GdwebDesignSearch {
   private getTableValue($: cheerio.CheerioAPI, label: string): string {
     const th = $('th').filter((_, element) => $(element).text().trim() === label).first();
     return th.next('td').text().replace(/\s+/g, ' ').trim();
+  }
+
+  private getDesignIdentity(url: string): { strNo: string; txtFgbn: string } | null {
+    try {
+      const parsed = new URL(url, GDWEB_BASE_URL);
+      const strNo = parsed.searchParams.get('str_no');
+      if (!strNo) return null;
+
+      return {
+        strNo,
+        txtFgbn: parsed.searchParams.get('Txt_fgbn') ?? '5',
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private getImageUrl(strNo: string, sgbn: string): string {
+    return `${GDWEB_BASE_URL}/sub/filedata.asp?str_no=${encodeURIComponent(strNo)}&sgbn=${sgbn}`;
+  }
+
+  private async fetchDesignImage(
+    kind: 'desktop' | 'mobile',
+    url: string
+  ): Promise<GdwebDesignImage | null> {
+    try {
+      const response = await axios.get<ArrayBuffer>(url, {
+        headers: GDWEB_REQUEST_HEADERS,
+        responseType: 'arraybuffer',
+        timeout: 15000,
+        maxContentLength: 12 * 1024 * 1024,
+        maxBodyLength: 12 * 1024 * 1024,
+        validateStatus: (status: number) => status < 400,
+      });
+      const data = Buffer.from(response.data);
+      const mimeType = this.detectImageMimeType(data);
+      if (!mimeType) return null;
+
+      const dimensions = this.getImageDimensions(data, mimeType);
+      if (!dimensions) return null;
+
+      return {
+        kind,
+        url,
+        mimeType,
+        width: dimensions.width,
+        height: dimensions.height,
+        byteLength: data.byteLength,
+        data: data.toString('base64'),
+      };
+    } catch (error) {
+      console.error(`[GdwebDesignSearch] ${kind} image unavailable at ${url}:`, error);
+      return null;
+    }
+  }
+
+  private detectImageMimeType(data: Buffer): 'image/jpeg' | 'image/png' | null {
+    if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
+      return 'image/jpeg';
+    }
+    if (
+      data.length >= 8 &&
+      data[0] === 0x89 &&
+      data.subarray(1, 4).toString('ascii') === 'PNG'
+    ) {
+      return 'image/png';
+    }
+    return null;
+  }
+
+  private getImageDimensions(
+    data: Buffer,
+    mimeType: 'image/jpeg' | 'image/png'
+  ): { width: number; height: number } | null {
+    if (mimeType === 'image/png') {
+      if (data.length < 24) return null;
+      return {
+        width: data.readUInt32BE(16),
+        height: data.readUInt32BE(20),
+      };
+    }
+
+    const startOfFrameMarkers = new Set([
+      0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
+      0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
+    ]);
+    let offset = 2;
+
+    while (offset + 9 < data.length) {
+      if (data[offset] !== 0xff) {
+        offset += 1;
+        continue;
+      }
+
+      const marker = data[offset + 1];
+      if (startOfFrameMarkers.has(marker)) {
+        return {
+          height: data.readUInt16BE(offset + 5),
+          width: data.readUInt16BE(offset + 7),
+        };
+      }
+
+      if (marker === 0xd8 || marker === 0xd9) {
+        offset += 2;
+        continue;
+      }
+
+      const segmentLength = data.readUInt16BE(offset + 2);
+      if (segmentLength < 2) return null;
+      offset += segmentLength + 2;
+    }
+
+    return null;
   }
 
   private parseCompactYear(dateText: string): number | null {

@@ -54,14 +54,32 @@ jobs:
               includePreviousYear: true
             });
             console.log(JSON.stringify(results.map((result) => ({
+              referenceId: 'gdweb-' + result.strNo,
               title: result.title,
               gdwebUrl: result.gdwebUrl,
               registeredDate: result.registeredDate,
               award: result.award,
               concept: result.concept,
-              primaryColor: result.primaryColor
+              primaryColor: result.primaryColor,
+              desktopImageUrl: result.desktopImageUrl,
+              mobileImageUrl: result.mobileImageUrl
             })), null, 2));
             if (results.length === 0) {
               throw new Error('No GDWEB smoke results found');
+            }
+            const reference = await gdweb.getDesignReference(results[0].gdwebUrl);
+            const images = reference.images.map((image) => ({
+              kind: image.kind,
+              mimeType: image.mimeType,
+              width: image.width,
+              height: image.height,
+              byteLength: image.byteLength
+            }));
+            console.log(JSON.stringify({
+              referenceId: 'gdweb-' + reference.design.strNo,
+              images
+            }, null, 2));
+            if (!reference.images.some((image) => image.kind === 'desktop')) {
+              throw new Error('GDWEB desktop evidence image is unavailable');
             }
           "

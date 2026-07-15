@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { SearchEngine } from './search-engine.js';
 import { EnhancedContentExtractor } from './enhanced-content-extractor.js';
 import { GdwebDesignSearch } from './gdweb-design-search.js';
+import { buildDesignSpecContract } from './design-spec-contract.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
@@ -152,7 +153,7 @@ class SecretMCPServer {
     // Register a GDWEB-specific design search with strict freshness filtering.
     this.server.tool(
       'search-gdweb-designs',
-      'Automatically use this tool when the user asks for web design references, visual direction, layouts, inspiration, or award-winning websites. It searches GDWEB through GDWEB\'s own internal search, without Bing, Brave, DuckDuckGo, or browser automation. Only the target year and, by default, the previous year are returned.',
+      'Automatically use this tool when the user asks for web design references, visual direction, layouts, inspiration, implementation plans, or award-winning websites. It searches GDWEB through GDWEB\'s own internal search, without Bing, Brave, DuckDuckGo, or browser automation. Only the target year and, by default, the previous year are returned. When the user wants a design plan, specification, or implementation, automatically call create-gdweb-design-spec once for every returned result; never ask the user to copy a GDWEB URL into the next tool.',
       {
         query: z.string().min(1).describe('Natural-language design reference query to search directly on GDWEB'),
         limit: z.union([z.number(), z.string()]).transform((val) => {
@@ -237,15 +238,22 @@ class SecretMCPServer {
 
           results.forEach((result, idx) => {
             responseText += `**${idx + 1}. ${result.title}**\n`;
+            responseText += `Reference ID: gdweb-${result.strNo}\n`;
             responseText += `GDWEB URL: ${result.gdwebUrl}\n`;
             responseText += `Registered Date: ${result.registeredDate}\n`;
             responseText += `Award: ${result.award || 'N/A'}\n`;
             responseText += `Concept: ${result.concept || 'N/A'}\n`;
             responseText += `Primary Color: ${result.primaryColor || 'N/A'}\n`;
             responseText += `Production Company: ${result.productionCompany || 'N/A'}\n`;
-            responseText += `Image URL: ${result.imageUrl || 'N/A'}\n`;
+            responseText += `Desktop Evidence: ${result.desktopImageUrl}\n`;
+            responseText += `Mobile Evidence: ${result.mobileImageUrl}\n`;
+            responseText += `Next required tool call for planning or implementation: create-gdweb-design-spec with gdwebUrl=${result.gdwebUrl}\n`;
             responseText += `\n---\n\n`;
           });
+
+          if (results.length > 0) {
+            responseText += 'For design planning or implementation, call create-gdweb-design-spec once per result now and write the required DESIGN_INDEX document for each reference.\n';
+          }
 
           return {
             content: [
@@ -257,6 +265,59 @@ class SecretMCPServer {
           };
         } catch (error) {
           console.error(`[MCP] Error in search-gdweb-designs tool handler:`, error);
+          throw error;
+        }
+      }
+    );
+
+    // Attach GDWEB-owned visual evidence and a reconstruction-grade specification contract.
+    this.server.tool(
+      'create-gdweb-design-spec',
+      'Automatically call this tool once for each result from search-gdweb-designs whenever the user asks to plan, specify, or implement a frontend. Pass the gdwebUrl from the search result directly; do not ask the user to enter it. This tool returns GDWEB desktop/mobile evidence images and a strict contract. After inspecting all returned images, you MUST write DESIGN_INDEX_gdweb-<strNo>.md with layout geometry, component abstractions, tokens, assets, responsive rules, interactions, accessibility, architecture, implementation tasks, and acceptance criteria detailed enough for another LLM to recreate the frontend without reopening GDWEB. Do not crawl the original live site.',
+      {
+        gdwebUrl: z.string().url().describe('GDWEB detail URL returned by search-gdweb-designs'),
+      },
+      async (args: unknown) => {
+        console.error(`[MCP] Tool call received: create-gdweb-design-spec`);
+        console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
+
+        try {
+          const schema = z.object({
+            gdwebUrl: z.string().url(),
+          });
+          const { gdwebUrl } = schema.parse(args);
+          const reference = await this.gdwebDesignSearch.getDesignReference(gdwebUrl);
+
+          const content: Array<
+            | { type: 'text'; text: string }
+            | { type: 'image'; data: string; mimeType: string }
+          > = [
+            {
+              type: 'text',
+              text: buildDesignSpecContract(reference),
+            },
+          ];
+
+          reference.images.forEach((image) => {
+            content.push({
+              type: 'text',
+              text: `Evidence image: ${image.kind} (${image.width}x${image.height}, ${image.byteLength} bytes)\nSource: ${image.url}`,
+            });
+            content.push({
+              type: 'image',
+              data: image.data,
+              mimeType: image.mimeType,
+            });
+          });
+
+          content.push({
+            type: 'text',
+            text: `Now inspect every attached image and write DESIGN_INDEX_gdweb-${reference.design.strNo}.md. Complete every required section; do not replace the document with a short response.`,
+          });
+
+          return { content };
+        } catch (error) {
+          console.error(`[MCP] Error in create-gdweb-design-spec tool handler:`, error);
           throw error;
         }
       }
