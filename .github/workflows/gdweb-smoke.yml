@@ -6,7 +6,7 @@ on:
       query:
         description: Design search query
         required: false
-        default: 디자인 트렌드 웹사이트
+        default: 금융
       year:
         description: Target year. Leave empty to use current year.
         required: false
@@ -34,9 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install chromium firefox
-
       - name: Build
         run: npm run build
 
@@ -46,13 +43,11 @@ jobs:
           YEAR: ${{ inputs.year }}
         run: |
           node -e "
-            const { SearchEngine } = await import('./dist/search-engine.js');
             const { GdwebDesignSearch } = await import('./dist/gdweb-design-search.js');
-            const engine = new SearchEngine();
-            const gdweb = new GdwebDesignSearch(engine);
+            const gdweb = new GdwebDesignSearch();
             const year = process.env.YEAR ? Number(process.env.YEAR) : undefined;
             const results = await gdweb.search({
-              query: process.env.QUERY || '디자인 트렌드 웹사이트',
+              query: process.env.QUERY || '금융',
               limit: 5,
               year,
               awardOnly: true,
@@ -60,14 +55,12 @@ jobs:
             });
             console.log(JSON.stringify(results.map((result) => ({
               title: result.title,
-              siteUrl: result.siteUrl,
               gdwebUrl: result.gdwebUrl,
               registeredDate: result.registeredDate,
               award: result.award,
               concept: result.concept,
               primaryColor: result.primaryColor
             })), null, 2));
-            await engine.closeAll();
             if (results.length === 0) {
               throw new Error('No GDWEB smoke results found');
             }

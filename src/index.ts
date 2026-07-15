@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-console.log('Web Search MCP Server starting...');
+console.error('Secret MCP Server starting...');
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -10,7 +10,7 @@ import { GdwebDesignSearch } from './gdweb-design-search.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
-class WebSearchMCPServer {
+class SecretMCPServer {
   private server: McpServer;
   private searchEngine: SearchEngine;
   private contentExtractor: EnhancedContentExtractor;
@@ -18,13 +18,13 @@ class WebSearchMCPServer {
 
   constructor() {
     this.server = new McpServer({
-      name: 'web-search-mcp',
+      name: 'secret-mcp',
       version: '0.3.1',
     });
 
     this.searchEngine = new SearchEngine();
     this.contentExtractor = new EnhancedContentExtractor();
-    this.gdwebDesignSearch = new GdwebDesignSearch(this.searchEngine);
+    this.gdwebDesignSearch = new GdwebDesignSearch();
 
     this.setupTools();
     this.setupGracefulShutdown();
@@ -59,8 +59,8 @@ class WebSearchMCPServer {
         }).optional().describe('Maximum characters per result content (0 = no limit). Usually not needed - content length is automatically optimized.'),
       },
       async (args: unknown) => {
-        console.log(`[MCP] Tool call received: full-web-search`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
+        console.error(`[MCP] Tool call received: full-web-search`);
+        console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
 
         try {
           // Convert and validate arguments
@@ -83,22 +83,22 @@ class WebSearchMCPServer {
           const hasExplicitMaxLength = typeof args === 'object' && args !== null && 'maxContentLength' in args;
           
           if (!hasExplicitMaxLength && isLikelyLlama) {
-            console.log(`[MCP] Detected potential Llama model (string parameters), applying content length limit`);
+            console.error(`[MCP] Detected potential Llama model (string parameters), applying content length limit`);
             validatedArgs.maxContentLength = 2000; // Reasonable limit for Llama
           }
           
           // For robust models (Qwen, Gemma, recent Deepseek), remove maxContentLength if it's set to a low value
           if (isLikelyRobustModel && validatedArgs.maxContentLength && validatedArgs.maxContentLength < 5000) {
-            console.log(`[MCP] Detected robust model (numeric parameters), removing unnecessary content length limit`);
+            console.error(`[MCP] Detected robust model (numeric parameters), removing unnecessary content length limit`);
             validatedArgs.maxContentLength = undefined;
           }
           
-          console.log(`[MCP] Validated args:`, JSON.stringify(validatedArgs, null, 2));
+          console.error(`[MCP] Validated args:`, JSON.stringify(validatedArgs, null, 2));
           
-          console.log(`[MCP] Starting web search...`);
+          console.error(`[MCP] Starting web search...`);
           const result = await this.handleWebSearch(validatedArgs);
           
-          console.log(`[MCP] Search completed, found ${result.results.length} results`);
+          console.error(`[MCP] Search completed, found ${result.results.length} results`);
           
           // Format the results as a comprehensive text response
           let responseText = `Search completed for "${result.query}" with ${result.total_results} results:\n\n`;
@@ -152,9 +152,9 @@ class WebSearchMCPServer {
     // Register a GDWEB-specific design search with strict freshness filtering.
     this.server.tool(
       'search-gdweb-designs',
-      'Search GDWEB design award pages and return only designs from the requested year and, by default, the previous year. If year is omitted, the current runtime year is used. Results outside the allowed years are excluded, not merely downranked.',
+      'Automatically use this tool when the user asks for web design references, visual direction, layouts, inspiration, or award-winning websites. It searches GDWEB through GDWEB\'s own internal search, without Bing, Brave, DuckDuckGo, or browser automation. Only the target year and, by default, the previous year are returned.',
       {
-        query: z.string().describe('Design reference query to search on GDWEB'),
+        query: z.string().min(1).describe('Natural-language design reference query to search directly on GDWEB'),
         limit: z.union([z.number(), z.string()]).transform((val) => {
           const num = typeof val === 'string' ? parseInt(val, 10) : val;
           if (isNaN(num) || num < 1 || num > 10) {
@@ -183,12 +183,12 @@ class WebSearchMCPServer {
         }).default(true).describe('Whether to include the previous year in addition to the target year. Defaults to true.'),
       },
       async (args: unknown) => {
-        console.log(`[MCP] Tool call received: search-gdweb-designs`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
+        console.error(`[MCP] Tool call received: search-gdweb-designs`);
+        console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
 
         try {
           const schema = z.object({
-            query: z.string(),
+            query: z.string().min(1),
             limit: z.union([z.number(), z.string()]).transform((val) => {
               const num = typeof val === 'string' ? parseInt(val, 10) : val;
               if (isNaN(num) || num < 1 || num > 10) {
@@ -238,7 +238,6 @@ class WebSearchMCPServer {
           results.forEach((result, idx) => {
             responseText += `**${idx + 1}. ${result.title}**\n`;
             responseText += `GDWEB URL: ${result.gdwebUrl}\n`;
-            responseText += `Site URL: ${result.siteUrl || 'N/A'}\n`;
             responseText += `Registered Date: ${result.registeredDate}\n`;
             responseText += `Award: ${result.award || 'N/A'}\n`;
             responseText += `Concept: ${result.concept || 'N/A'}\n`;
@@ -263,116 +262,6 @@ class WebSearchMCPServer {
       }
     );
 
-    // Resolve a GDWEB detail page to the original designed site URL.
-    this.server.tool(
-      'get-gdweb-design-site',
-      'Resolve a GDWEB design detail page or str_no to the original designed site URL. Optionally fetches text content from that original site.',
-      {
-        gdwebUrl: z.string().url().optional().describe('GDWEB detail URL, for example https://www.gdweb.co.kr/sub/view.asp?...&str_no=27065'),
-        strNo: z.union([z.number(), z.string()]).transform((val) => String(val)).optional().describe('GDWEB str_no value from a detail URL'),
-        txtFgbn: z.union([z.number(), z.string()]).transform((val) => String(val)).default('5').describe('GDWEB Txt_fgbn value, default 5'),
-        includeContent: z.union([z.boolean(), z.string()]).transform((val) => {
-          if (typeof val === 'string') {
-            return val.toLowerCase() === 'true';
-          }
-          return Boolean(val);
-        }).default(false).describe('Whether to fetch text content from the original designed site. Defaults to false.'),
-        maxContentLength: z.union([z.number(), z.string()]).transform((val) => {
-          const num = typeof val === 'string' ? parseInt(val, 10) : val;
-          if (isNaN(num) || num < 0) {
-            throw new Error('Invalid maxContentLength: must be a non-negative number');
-          }
-          return num;
-        }).optional().describe('Maximum characters for fetched original site content.'),
-      },
-      async (args: unknown) => {
-        console.log(`[MCP] Tool call received: get-gdweb-design-site`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
-
-        try {
-          const schema = z.object({
-            gdwebUrl: z.string().url().optional(),
-            strNo: z.union([z.number(), z.string()]).transform((val) => String(val)).optional(),
-            txtFgbn: z.union([z.number(), z.string()]).transform((val) => String(val)).default('5'),
-            includeContent: z.union([z.boolean(), z.string()]).transform((val) => {
-              if (typeof val === 'string') {
-                return val.toLowerCase() === 'true';
-              }
-              return Boolean(val);
-            }).default(false),
-            maxContentLength: z.union([z.number(), z.string()]).transform((val) => {
-              const num = typeof val === 'string' ? parseInt(val, 10) : val;
-              if (isNaN(num) || num < 0) {
-                throw new Error('Invalid maxContentLength: must be a non-negative number');
-              }
-              return num;
-            }).optional(),
-          });
-          const parsed = schema.parse(args);
-
-          if (!parsed.gdwebUrl && !parsed.strNo) {
-            throw new Error('Either gdwebUrl or strNo is required');
-          }
-
-          const design = parsed.gdwebUrl
-            ? await this.gdwebDesignSearch.getDesignFromGdwebUrl(parsed.gdwebUrl)
-            : await this.gdwebDesignSearch.getDesignFromStrNo(parsed.strNo!, parsed.txtFgbn);
-
-          if (!design) {
-            throw new Error('Unable to resolve GDWEB design details');
-          }
-
-          let siteContent = '';
-          let fetchStatus = 'not_requested';
-          let fetchError = '';
-
-          if (parsed.includeContent && design.siteUrl) {
-            try {
-              siteContent = await this.contentExtractor.extractContent({
-                url: design.siteUrl,
-                maxContentLength: parsed.maxContentLength,
-              });
-              fetchStatus = 'success';
-            } catch (error) {
-              fetchStatus = 'error';
-              fetchError = error instanceof Error ? error.message : 'Unknown error';
-            }
-          }
-
-          let responseText = `**${design.title}**\n`;
-          responseText += `GDWEB URL: ${design.gdwebUrl}\n`;
-          responseText += `Original Site URL: ${design.siteUrl || 'N/A'}\n`;
-          responseText += `Registered Date: ${design.registeredDate}\n`;
-          responseText += `Award: ${design.award || 'N/A'}\n`;
-          responseText += `Concept: ${design.concept || 'N/A'}\n`;
-          responseText += `Primary Color: ${design.primaryColor || 'N/A'}\n`;
-          responseText += `Production Company: ${design.productionCompany || 'N/A'}\n`;
-          responseText += `Image URL: ${design.imageUrl || 'N/A'}\n`;
-          responseText += `Original Site Fetch Status: ${fetchStatus}\n`;
-
-          if (fetchError) {
-            responseText += `Original Site Fetch Error: ${fetchError}\n`;
-          }
-
-          if (siteContent) {
-            responseText += `\n**Original Site Content:**\n${siteContent}`;
-          }
-
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: responseText,
-              },
-            ],
-          };
-        } catch (error) {
-          console.error(`[MCP] Error in get-gdweb-design-site tool handler:`, error);
-          throw error;
-        }
-      }
-    );
-
     // Register the lightweight web search summaries tool (secondary choice for quick results)
     this.server.tool(
       'get-web-search-summaries',
@@ -388,8 +277,8 @@ class WebSearchMCPServer {
         }).default(5).describe('Number of search results to return (1-10)'),
       },
       async (args: unknown) => {
-        console.log(`[MCP] Tool call received: get-web-search-summaries`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
+        console.error(`[MCP] Tool call received: get-web-search-summaries`);
+        console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
 
         try {
           // Validate arguments
@@ -411,7 +300,7 @@ class WebSearchMCPServer {
             limit = limitValue;
           }
 
-          console.log(`[MCP] Starting web search summaries...`);
+          console.error(`[MCP] Starting web search summaries...`);
           
           try {
             // Use existing search engine to get results with snippets
@@ -430,7 +319,7 @@ class WebSearchMCPServer {
               timestamp: item.timestamp,
             }));
 
-            console.log(`[MCP] Search summaries completed, found ${summaryResults.length} results`);
+            console.error(`[MCP] Search summaries completed, found ${summaryResults.length} results`);
             
             // Format the results as text
             let responseText = `Search summaries for "${obj.query}" with ${summaryResults.length} results:\n\n`;
@@ -481,8 +370,8 @@ class WebSearchMCPServer {
         }).optional().describe('Maximum characters for the extracted content (0 = no limit, undefined = use default limit). Usually not needed - content length is automatically optimized.'),
       },
       async (args: unknown) => {
-        console.log(`[MCP] Tool call received: get-single-web-page-content`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
+        console.error(`[MCP] Tool call received: get-single-web-page-content`);
+        console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
 
         try {
           // Validate arguments
@@ -505,7 +394,7 @@ class WebSearchMCPServer {
             maxContentLength = maxLengthValue === 0 ? undefined : maxLengthValue;
           }
 
-          console.log(`[MCP] Starting single page content extraction for: ${obj.url}`);
+          console.error(`[MCP] Starting single page content extraction for: ${obj.url}`);
           
           // Use existing content extractor to get page content
           const content = await this.contentExtractor.extractContent({
@@ -521,7 +410,7 @@ class WebSearchMCPServer {
           // const contentPreview = content.length > 200 ? content.substring(0, 200) + '...' : content; // Unused for now
           const wordCount = content.split(/\s+/).filter(word => word.length > 0).length;
 
-          console.log(`[MCP] Single page content extraction completed, extracted ${content.length} characters`);
+          console.error(`[MCP] Single page content extraction completed, extracted ${content.length} characters`);
 
           // Format the result as text
           let responseText = `**Page Content from: ${obj.url}**\n\n`;
@@ -599,7 +488,7 @@ class WebSearchMCPServer {
       // Request up to 2x the limit or at least 5 extra results, capped at 10 (Google's max)
       const searchLimit = includeContent ? Math.min(limit * 2 + 2, 10) : limit;
       
-      console.log(`[web-search-mcp] DEBUG: Requesting ${searchLimit} search results to get ${limit} non-PDF content results`);
+      console.error(`[web-search-mcp] DEBUG: Requesting ${searchLimit} search results to get ${limit} non-PDF content results`);
       
       // Perform the search
       const searchResponse = await this.searchEngine.search({
@@ -711,7 +600,7 @@ class WebSearchMCPServer {
 
     // Graceful shutdown - close browsers when process exits
     process.on('SIGINT', async () => {
-      console.log('Shutting down gracefully...');
+      console.error('Shutting down gracefully...');
       try {
         await Promise.all([
           this.contentExtractor.closeAll(),
@@ -724,7 +613,7 @@ class WebSearchMCPServer {
     });
 
     process.on('SIGTERM', async () => {
-      console.log('Shutting down gracefully...');
+      console.error('Shutting down gracefully...');
       try {
         await Promise.all([
           this.contentExtractor.closeAll(),
@@ -738,19 +627,19 @@ class WebSearchMCPServer {
   }
 
   async run(): Promise<void> {
-    console.log('Setting up MCP server...');
+    console.error('Setting up MCP server...');
     const transport = new StdioServerTransport();
     
-    console.log('Connecting to transport...');
+    console.error('Connecting to transport...');
     await this.server.connect(transport);
-    console.log('Web Search MCP Server started');
-    console.log('Server timestamp:', new Date().toISOString());
-    console.log('Waiting for MCP messages...');
+    console.error('Secret MCP Server started');
+    console.error('Server timestamp:', new Date().toISOString());
+    console.error('Waiting for MCP messages...');
   }
 }
 
 // Start the server
-const server = new WebSearchMCPServer();
+const server = new SecretMCPServer();
 server.run().catch((error: unknown) => {
   if (error instanceof Error) {
     console.error('Server error:', error.message);
