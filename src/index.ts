@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-console.error('Web Design MCP Server starting...');
+console.log('Web Search MCP Server starting...');
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -7,11 +7,10 @@ import { z } from 'zod';
 import { SearchEngine } from './search-engine.js';
 import { EnhancedContentExtractor } from './enhanced-content-extractor.js';
 import { GdwebDesignSearch } from './gdweb-design-search.js';
-import { formatLayoutIndexMarkdown, generateLayoutIndex } from './layout-index-extractor.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
-class WebDesignMCPServer {
+class WebSearchMCPServer {
   private server: McpServer;
   private searchEngine: SearchEngine;
   private contentExtractor: EnhancedContentExtractor;
@@ -19,7 +18,7 @@ class WebDesignMCPServer {
 
   constructor() {
     this.server = new McpServer({
-      name: 'web-design',
+      name: 'web-search-mcp',
       version: '0.3.1',
     });
 
@@ -371,85 +370,6 @@ class WebDesignMCPServer {
           console.error(`[MCP] Error in get-gdweb-design-site tool handler:`, error);
           throw error;
         }
-      }
-    );
-
-    // Convert a live reference site into measured layout evidence for an LLM design plan.
-    this.server.tool(
-      'generate-web-design-index',
-      'Analyze the rendered DOM of a web design reference and return an LLM-readable layout index. Accepts a direct site URL or resolves an original site from a GDWEB detail URL/str_no. Use this after web trend research and GDWEB reference discovery, before creating an implementation plan.',
-      {
-        url: z.string().url().optional().describe('Direct web design reference URL to analyze'),
-        gdwebUrl: z.string().url().optional().describe('GDWEB detail URL whose original site should be analyzed'),
-        strNo: z.union([z.number(), z.string()]).transform((val) => String(val)).optional().describe('GDWEB str_no whose original site should be analyzed'),
-        txtFgbn: z.union([z.number(), z.string()]).transform((val) => String(val)).default('5').describe('GDWEB Txt_fgbn value, default 5'),
-        maxSections: z.union([z.number(), z.string()]).transform((val) => {
-          const num = typeof val === 'string' ? parseInt(val, 10) : val;
-          if (isNaN(num) || num < 1 || num > 50) {
-            throw new Error('Invalid maxSections: must be a number between 1 and 50');
-          }
-          return num;
-        }).default(24).describe('Maximum number of visible layout sections to index (1-50)'),
-        outputFormat: z.enum(['markdown', 'json', 'both']).default('markdown').describe('Layout index response format'),
-      },
-      async (args: unknown) => {
-        console.log(`[MCP] Tool call received: generate-web-design-index`);
-        console.log(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
-
-        const schema = z.object({
-          url: z.string().url().optional(),
-          gdwebUrl: z.string().url().optional(),
-          strNo: z.union([z.number(), z.string()]).transform((val) => String(val)).optional(),
-          txtFgbn: z.union([z.number(), z.string()]).transform((val) => String(val)).default('5'),
-          maxSections: z.union([z.number(), z.string()]).transform((val) => {
-            const num = typeof val === 'string' ? parseInt(val, 10) : val;
-            if (isNaN(num) || num < 1 || num > 50) {
-              throw new Error('Invalid maxSections: must be a number between 1 and 50');
-            }
-            return num;
-          }).default(24),
-          outputFormat: z.enum(['markdown', 'json', 'both']).default('markdown'),
-        });
-        const parsed = schema.parse(args);
-
-        if (!parsed.url && !parsed.gdwebUrl && !parsed.strNo) {
-          throw new Error('One of url, gdwebUrl, or strNo is required');
-        }
-
-        let targetUrl = parsed.url ?? '';
-        let gdwebSource = '';
-        if (!targetUrl) {
-          const design = parsed.gdwebUrl
-            ? await this.gdwebDesignSearch.getDesignFromGdwebUrl(parsed.gdwebUrl)
-            : await this.gdwebDesignSearch.getDesignFromStrNo(parsed.strNo!, parsed.txtFgbn);
-
-          if (!design) {
-            throw new Error('Unable to resolve GDWEB design details');
-          }
-          if (!design.siteUrl) {
-            throw new Error('The GDWEB design does not provide an original site URL');
-          }
-          targetUrl = design.siteUrl;
-          gdwebSource = design.gdwebUrl;
-        }
-
-        const index = await generateLayoutIndex(targetUrl, parsed.maxSections);
-        let responseText = parsed.outputFormat === 'json'
-          ? JSON.stringify(index, null, 2)
-          : formatLayoutIndexMarkdown(index, parsed.outputFormat === 'both');
-
-        if (gdwebSource && parsed.outputFormat !== 'json') {
-          responseText = `- GDWEB source: ${gdwebSource}\n\n${responseText}`;
-        }
-
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: responseText,
-            },
-          ],
-        };
       }
     );
 
@@ -818,19 +738,19 @@ class WebDesignMCPServer {
   }
 
   async run(): Promise<void> {
-    console.error('Setting up MCP server...');
+    console.log('Setting up MCP server...');
     const transport = new StdioServerTransport();
     
-    console.error('Connecting to transport...');
+    console.log('Connecting to transport...');
     await this.server.connect(transport);
-    console.error('Web Design MCP Server started');
-    console.error('Server timestamp:', new Date().toISOString());
-    console.error('Waiting for MCP messages...');
+    console.log('Web Search MCP Server started');
+    console.log('Server timestamp:', new Date().toISOString());
+    console.log('Waiting for MCP messages...');
   }
 }
 
 // Start the server
-const server = new WebDesignMCPServer();
+const server = new WebSearchMCPServer();
 server.run().catch((error: unknown) => {
   if (error instanceof Error) {
     console.error('Server error:', error.message);

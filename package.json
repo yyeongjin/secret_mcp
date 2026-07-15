@@ -1,7 +1,7 @@
 {
-  "name": "web-design-mcp-server",
+  "name": "web-search-mcp-server",
   "version": "0.3.1",
-  "description": "Web design research and layout indexing MCP server for the /web-design command",
+  "description": "MCP server for web search with full page content extraction, search summaries, and single page content extraction",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -16,7 +16,7 @@
     "node": ">=18"
   },
   "bin": {
-    "web-design-mcp": "./dist/index.js"
+    "web-search-mcp": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc && echo '✅ TypeScript compilation complete: dist/index.js'",
@@ -27,15 +27,14 @@
   },
   "keywords": [
     "mcp",
-    "web-design",
-    "gdweb",
+    "web-search",
     "ai",
     "llm"
   ],
-  "author": "yyeongjin",
+  "author": "Mark Russell",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yyeongjin/secret_mcp.git"
+    "url": "https://github.com/mrkrsl/web-search-mcp.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.0",

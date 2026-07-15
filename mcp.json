@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "web-design": {
+    "web-search": {
       "command": "node",
       "args": [
-        "/absolute/path/to/secret_mcp/dist/index.js"
+        "/Users/mark/Projects/web-search-mcp/dist/simple-test.js"
       ]
     }
   }
-}
+} 
