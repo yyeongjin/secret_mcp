@@ -83,3 +83,10 @@ jobs:
               throw new Error('GDWEB desktop evidence image is unavailable');
             }
           "
+
+      - name: Verify isolated LLM request per GDWEB result
+        env:
+          QUERY: ${{ inputs.query }}
+          YEAR: ${{ inputs.year }}
+          LIMIT: 2
+        run: npm run smoke:gdweb-isolation

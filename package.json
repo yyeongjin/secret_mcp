@@ -1,7 +1,7 @@
 {
   "name": "secret-mcp",
-  "version": "0.3.1",
-  "description": "Local MCP search server with direct GDWEB design search and general web search tools",
+  "version": "0.4.0",
+  "description": "Local MCP server for isolated per-result GDWEB design specifications and general web search",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -23,6 +23,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "node ./dist/index.js",
     "lint": "eslint \"src/**/*.ts\"",
+    "smoke:gdweb-isolation": "node scripts/gdweb-isolated-smoke.mjs",
     "format": "prettier --write ."
   },
   "keywords": [
@@ -45,6 +46,7 @@
     "p-limit": "^6.2.0",
     "p-retry": "^6.2.1",
     "playwright": "^1.48.0",
+    "sharp": "^0.34.5",
     "zod": "^3.22.0"
   },
   "devDependencies": {

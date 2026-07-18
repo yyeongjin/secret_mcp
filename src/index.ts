@@ -7,7 +7,11 @@ import { z } from 'zod';
 import { SearchEngine } from './search-engine.js';
 import { EnhancedContentExtractor } from './enhanced-content-extractor.js';
 import { GdwebDesignSearch } from './gdweb-design-search.js';
-import { buildDesignSpecContract } from './design-spec-contract.js';
+import {
+  GdwebDesignIndexGenerator,
+  GdwebDesignIndexSampleRequest,
+} from './gdweb-design-index-generator.js';
+import { prepareGdwebSamplingImages } from './gdweb-sampling-images.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
@@ -16,16 +20,21 @@ class SecretMCPServer {
   private searchEngine: SearchEngine;
   private contentExtractor: EnhancedContentExtractor;
   private gdwebDesignSearch: GdwebDesignSearch;
+  private gdwebDesignIndexGenerator: GdwebDesignIndexGenerator;
 
   constructor() {
     this.server = new McpServer({
       name: 'secret-mcp',
-      version: '0.3.1',
+      version: '0.4.0',
     });
 
     this.searchEngine = new SearchEngine();
     this.contentExtractor = new EnhancedContentExtractor();
     this.gdwebDesignSearch = new GdwebDesignSearch();
+    this.gdwebDesignIndexGenerator = new GdwebDesignIndexGenerator(
+      this.gdwebDesignSearch,
+      request => this.sampleGdwebDesignIndex(request)
+    );
 
     this.setupTools();
     this.setupGracefulShutdown();
@@ -153,7 +162,7 @@ class SecretMCPServer {
     // Register a GDWEB-specific design search with strict freshness filtering.
     this.server.tool(
       'search-gdweb-designs',
-      'Automatically use this tool when the user asks for web design references, visual direction, layouts, inspiration, implementation plans, or award-winning websites. It searches GDWEB through GDWEB\'s own internal search, without Bing, Brave, DuckDuckGo, or browser automation. Only the target year and, by default, the previous year are returned. When the user wants a design plan, specification, or implementation, automatically call create-gdweb-design-spec once for every returned result; never ask the user to copy a GDWEB URL into the next tool.',
+      'Use this tool only when the user wants a lightweight list of GDWEB references. It returns metadata for multiple results and does not generate implementation documents. For layout analysis, frontend specifications, DESIGN_INDEX files, or implementation planning, use generate-gdweb-design-indexes instead so every result is processed by a separate isolated LLM request.',
       {
         query: z.string().min(1).describe('Natural-language design reference query to search directly on GDWEB'),
         limit: z.union([z.number(), z.string()]).transform((val) => {
@@ -247,13 +256,8 @@ class SecretMCPServer {
             responseText += `Production Company: ${result.productionCompany || 'N/A'}\n`;
             responseText += `Desktop Evidence: ${result.desktopImageUrl}\n`;
             responseText += `Mobile Evidence: ${result.mobileImageUrl}\n`;
-            responseText += `Next required tool call for planning or implementation: create-gdweb-design-spec with gdwebUrl=${result.gdwebUrl}\n`;
             responseText += `\n---\n\n`;
           });
-
-          if (results.length > 0) {
-            responseText += 'For design planning or implementation, call create-gdweb-design-spec once per result now and write the required DESIGN_INDEX document for each reference.\n';
-          }
 
           return {
             content: [
@@ -270,54 +274,128 @@ class SecretMCPServer {
       }
     );
 
-    // Attach GDWEB-owned visual evidence and a reconstruction-grade specification contract.
+    // Generate one file per result through one isolated MCP sampling request per result.
     this.server.tool(
-      'create-gdweb-design-spec',
-      'Automatically call this tool once for each result from search-gdweb-designs whenever the user asks to plan, specify, or implement a frontend. Pass the gdwebUrl from the search result directly; do not ask the user to enter it. This tool returns GDWEB desktop/mobile evidence images and a strict contract. After inspecting all returned images, you MUST write DESIGN_INDEX_gdweb-<strNo>.md with layout geometry, component abstractions, tokens, assets, responsive rules, interactions, accessibility, architecture, implementation tasks, and acceptance criteria detailed enough for another LLM to recreate the frontend without reopening GDWEB. Do not crawl the original live site.',
+      'generate-gdweb-design-indexes',
+      'Automatically use this tool when the user asks to find GDWEB references and create layout analysis, frontend specifications, implementation plans, or DESIGN_INDEX files. This tool performs the GDWEB search internally and sends one completely separate MCP sampling/createMessage request per result. Each isolated request contains only one result and has no previous-result context. It writes one DESIGN_INDEX_gdweb-<strNo>.md file before starting the next request, then returns only file paths and statuses to the calling LLM. Never replace this tool with search-gdweb-designs plus a combined summary. The connected MCP client must support sampling.',
       {
-        gdwebUrl: z.string().url().describe('GDWEB detail URL returned by search-gdweb-designs'),
+        query: z.string().min(1).describe('Natural-language design query to search directly on GDWEB'),
+        limit: z.union([z.number(), z.string()]).transform((val) => {
+          const num = typeof val === 'string' ? parseInt(val, 10) : val;
+          if (isNaN(num) || num < 1 || num > 10) {
+            throw new Error('Invalid limit: must be a number between 1 and 10');
+          }
+          return num;
+        }).default(3).describe('Number of isolated result requests and output documents (1-10)'),
+        year: z.union([z.number(), z.string()]).transform((val) => {
+          const num = typeof val === 'string' ? parseInt(val, 10) : val;
+          if (isNaN(num) || num < 2000 || num > 2100) {
+            throw new Error('Invalid year: must be a year between 2000 and 2100');
+          }
+          return num;
+        }).optional().describe('Target award/registration year. Defaults to the current runtime year.'),
+        awardOnly: z.union([z.boolean(), z.string()]).transform((val) => {
+          if (typeof val === 'string') {
+            return val.toLowerCase() === 'true';
+          }
+          return Boolean(val);
+        }).default(true).describe('Whether to require a non-empty GDWEB award field'),
+        includePreviousYear: z.union([z.boolean(), z.string()]).transform((val) => {
+          if (typeof val === 'string') {
+            return val.toLowerCase() === 'true';
+          }
+          return Boolean(val);
+        }).default(true).describe('Whether to include the previous year'),
+        language: z.string().min(1).default('Korean').describe('Language for every generated document'),
+        outputDirectory: z.string().min(1).optional().describe('Directory for generated DESIGN_INDEX files. Defaults to DESIGN_INDEX_OUTPUT_DIR or ./design-index.'),
+        maxTokens: z.union([z.number(), z.string()]).transform((val) => {
+          const num = typeof val === 'string' ? parseInt(val, 10) : val;
+          if (isNaN(num) || num < 2000 || num > 50000) {
+            throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
+          }
+          return num;
+        }).default(20000).describe('Maximum tokens requested for each isolated LLM sampling call'),
       },
       async (args: unknown) => {
-        console.error(`[MCP] Tool call received: create-gdweb-design-spec`);
+        console.error(`[MCP] Tool call received: generate-gdweb-design-indexes`);
         console.error(`[MCP] Raw arguments:`, JSON.stringify(args, null, 2));
 
         try {
           const schema = z.object({
-            gdwebUrl: z.string().url(),
+            query: z.string().min(1),
+            limit: z.union([z.number(), z.string()]).transform((val) => {
+              const num = typeof val === 'string' ? parseInt(val, 10) : val;
+              if (isNaN(num) || num < 1 || num > 10) {
+                throw new Error('Invalid limit: must be a number between 1 and 10');
+              }
+              return num;
+            }).default(3),
+            year: z.union([z.number(), z.string()]).transform((val) => {
+              const num = typeof val === 'string' ? parseInt(val, 10) : val;
+              if (isNaN(num) || num < 2000 || num > 2100) {
+                throw new Error('Invalid year: must be a year between 2000 and 2100');
+              }
+              return num;
+            }).optional(),
+            awardOnly: z.union([z.boolean(), z.string()]).transform((val) => {
+              if (typeof val === 'string') {
+                return val.toLowerCase() === 'true';
+              }
+              return Boolean(val);
+            }).default(true),
+            includePreviousYear: z.union([z.boolean(), z.string()]).transform((val) => {
+              if (typeof val === 'string') {
+                return val.toLowerCase() === 'true';
+              }
+              return Boolean(val);
+            }).default(true),
+            language: z.string().min(1).default('Korean'),
+            outputDirectory: z.string().min(1).optional(),
+            maxTokens: z.union([z.number(), z.string()]).transform((val) => {
+              const num = typeof val === 'string' ? parseInt(val, 10) : val;
+              if (isNaN(num) || num < 2000 || num > 50000) {
+                throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
+              }
+              return num;
+            }).default(20000),
           });
-          const { gdwebUrl } = schema.parse(args);
-          const reference = await this.gdwebDesignSearch.getDesignReference(gdwebUrl);
+          const parsed = schema.parse(args);
+          const clientCapabilities = this.server.server.getClientCapabilities();
+          if (!clientCapabilities?.sampling) {
+            throw new Error(
+              'The connected MCP client does not support sampling/createMessage. Separate per-result LLM requests cannot be guaranteed, so no combined fallback was run.'
+            );
+          }
 
-          const content: Array<
-            | { type: 'text'; text: string }
-            | { type: 'image'; data: string; mimeType: string }
-          > = [
-            {
-              type: 'text',
-              text: buildDesignSpecContract(reference),
-            },
+          const result = await this.gdwebDesignIndexGenerator.generate(parsed);
+          const lines = [
+            `GDWEB isolated design-index generation completed for "${result.query}".`,
+            `Output directory: ${result.outputDirectory}`,
+            `Search results: ${result.total}`,
+            `Generated: ${result.generated}`,
+            `Failed: ${result.failed}`,
+            '',
           ];
 
-          reference.images.forEach((image) => {
-            content.push({
-              type: 'text',
-              text: `Evidence image: ${image.kind} (${image.width}x${image.height}, ${image.byteLength} bytes)\nSource: ${image.url}`,
-            });
-            content.push({
-              type: 'image',
-              data: image.data,
-              mimeType: image.mimeType,
-            });
+          result.items.forEach((item, index) => {
+            lines.push(`${index + 1}. ${item.referenceId} - ${item.title}`);
+            lines.push(`   Status: ${item.status}`);
+            if (item.filePath) lines.push(`   File: ${item.filePath}`);
+            if (item.model) lines.push(`   Model: ${item.model}`);
+            if (item.error) lines.push(`   Error: ${item.error}`);
           });
 
-          content.push({
-            type: 'text',
-            text: `Now inspect every attached image and write DESIGN_INDEX_gdweb-${reference.design.strNo}.md. Complete every required section; do not replace the document with a short response.`,
-          });
-
-          return { content };
+          return {
+            isError: result.failed > 0,
+            content: [
+              {
+                type: 'text' as const,
+                text: lines.join('\n'),
+              },
+            ],
+          };
         } catch (error) {
-          console.error(`[MCP] Error in create-gdweb-design-spec tool handler:`, error);
+          console.error(`[MCP] Error in generate-gdweb-design-indexes tool handler:`, error);
           throw error;
         }
       }
@@ -499,6 +577,97 @@ class SecretMCPServer {
         }
       }
     );
+  }
+
+  private async sampleGdwebDesignIndex(
+    request: GdwebDesignIndexSampleRequest
+  ): Promise<{ markdown: string; model: string }> {
+    const { reference, contract, language, maxTokens } = request;
+    const samplingImages = await prepareGdwebSamplingImages(reference.images);
+    const messages: Array<{
+      role: 'user';
+      content:
+        | { type: 'text'; text: string }
+        | { type: 'image'; data: string; mimeType: string };
+    }> = [
+      {
+        role: 'user',
+        content: {
+          type: 'text',
+          text: [
+            contract,
+            '',
+            '## Isolated Request Boundary',
+            '',
+            `This request contains exactly one GDWEB reference: gdweb-${reference.design.strNo}.`,
+            'Do not compare it with, merge it with, or summarize it alongside any other reference.',
+            `Write the complete document in ${language}.`,
+            'Return only the complete Markdown document. Do not wrap it in commentary.',
+          ].join('\n'),
+        },
+      },
+    ];
+
+    samplingImages.forEach((image) => {
+      messages.push({
+        role: 'user',
+        content: {
+          type: 'text',
+          text: `Evidence image for gdweb-${reference.design.strNo}: ${image.sourceKind} part ${image.part}/${image.totalParts}, ${image.width}x${image.height}, ${image.byteLength} bytes, source=${image.sourceUrl}`,
+        },
+      });
+      messages.push({
+        role: 'user',
+        content: {
+          type: 'image',
+          data: image.data,
+          mimeType: image.mimeType,
+        },
+      });
+    });
+
+    console.error(
+      `[MCP] Starting isolated sampling request for gdweb-${reference.design.strNo}`
+    );
+    const response = await this.server.server.createMessage({
+      systemPrompt: [
+        'You are a senior frontend specification author.',
+        'Analyze only the single GDWEB reference provided in this sampling request.',
+        'Produce a reconstruction-grade DESIGN_INDEX document, not a multi-reference summary.',
+      ].join(' '),
+      messages,
+      includeContext: 'none',
+      maxTokens,
+      temperature: 0.2,
+      modelPreferences: {
+        intelligencePriority: 1,
+        speedPriority: 0.2,
+        costPriority: 0.2,
+      },
+      metadata: {
+        task: 'gdweb-design-index',
+        referenceId: `gdweb-${reference.design.strNo}`,
+      },
+    });
+
+    if (response.content.type !== 'text') {
+      throw new Error(
+        `The isolated LLM request for gdweb-${reference.design.strNo} did not return text`
+      );
+    }
+    if (response.stopReason === 'maxTokens') {
+      throw new Error(
+        `The isolated LLM request for gdweb-${reference.design.strNo} reached maxTokens before completing`
+      );
+    }
+
+    console.error(
+      `[MCP] Completed isolated sampling request for gdweb-${reference.design.strNo} with ${response.model}`
+    );
+    return {
+      markdown: response.content.text,
+      model: response.model,
+    };
   }
 
   private validateAndConvertArgs(args: unknown): WebSearchToolInput {

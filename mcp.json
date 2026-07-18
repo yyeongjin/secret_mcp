@@ -4,7 +4,10 @@
       "command": "node",
       "args": [
         "/absolute/path/to/secret_mcp/dist/index.js"
-      ]
+      ],
+      "env": {
+        "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index"
+      }
     }
   }
 }
