@@ -1,8 +1,8 @@
 # Secret MCP
 
-GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다.
+GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다. 각 파일 내부에는 확인 가능한 페이지·라우트별 레이아웃, 내비게이션, 픽셀 좌표, 색상, 컴포넌트와 반응형 명세가 들어갑니다.
 
-여러 작품의 이미지와 설명을 한 LLM 문맥이나 한 문서에 합치지 않습니다. 서버가 검색 결과를 내부에서 순서대로 처리하며, 작품마다 독립된 MCP `sampling/createMessage` 요청을 만들고 작품별 파일을 저장한 뒤 다음 작품으로 넘어갑니다. 별도 로컬 웹 프로그램에서는 작품을 하나씩 선택해 사용 근거, LLM 계약, 생성 기록과 최종 문서를 확인할 수 있습니다.
+여러 작품의 이미지와 설명을 한 LLM 문맥이나 한 문서에 합치지 않습니다. 서버가 검색 결과를 내부에서 순서대로 처리하며, 작품마다 독립된 MCP `sampling/createMessage` 요청을 만들고 작품별 파일을 저장한 뒤 다음 작품으로 넘어갑니다. 별도 로컬 웹 프로그램에서는 작품을 하나씩 선택해 사용 근거, 측정 색상·좌표, LLM 계약, 생성 기록과 최종 문서를 확인하고 다음 검색의 제외 목록을 관리할 수 있습니다.
 
 ## 사용 방법
 
@@ -29,7 +29,7 @@ DESIGN_INDEX_OUTPUT_DIR=/absolute/path/to/design-index npm run web
 http://127.0.0.1:4317
 ```
 
-웹 프로그램은 디버거가 아닙니다. 생성 실행 목록, 작품별 진행 상태, GDWEB 근거 이미지, LLM에 전달한 명세 계약, 최종 Markdown과 생성 시간만 읽기 전용으로 보여줍니다.
+웹 프로그램은 생성 실행 목록, 작품별 진행 상태, GDWEB 근거 이미지, 측정 좌표·팔레트, LLM에 전달한 명세 계약, 최종 Markdown과 생성 시간을 보여줍니다. 문서와 근거는 읽기 전용이며, `검색 제외`와 `제외 해제`만 다음 검색 필터를 변경합니다.
 
 ### 3. MCP 등록
 
@@ -52,7 +52,7 @@ http://127.0.0.1:4317
 
 MCP 클라이언트는 `sampling/createMessage`를 지원해야 합니다. 지원하지 않는 클라이언트에서는 여러 작품을 같은 문맥에 넣는 fallback을 실행하지 않고 명확한 오류를 반환합니다.
 
-서버는 HTTP 포트를 열지 않습니다. 클라이언트가 `node dist/index.js`를 자식 프로세스로 실행하고 stdio로 JSON-RPC 메시지를 주고받습니다.
+MCP stdio 서버 자체는 HTTP 포트를 열지 않습니다. 클라이언트가 `node dist/index.js`를 자식 프로세스로 실행하고 stdio로 JSON-RPC 메시지를 주고받습니다. 별도의 웹 뷰어 프로세스만 기본 `4317` 포트를 사용합니다.
 
 ### 4. LLM에 요청
 
@@ -62,6 +62,8 @@ MCP 클라이언트는 `sampling/createMessage`를 지원해야 합니다. 지�
 Godot 프로젝트 사이트에 맞는 최근 디자인 레퍼런스 3개를 GDWEB에서 찾아줘.
 각 검색 결과를 반드시 서로 독립된 LLM 요청으로 분석하고,
 결과마다 재구현 가능한 DESIGN_INDEX 문서를 하나씩 생성해줘.
+각 문서 안에서는 보이는 페이지를 페이지별로 분리하고,
+내비게이션부터 섹션 좌표, 정확한 색상 형식과 반응형 수치까지 명세해줘.
 ```
 
 호스트 LLM은 `generate-gdweb-design-indexes` 도구를 한 번 호출합니다. 검색과 작품별 LLM 요청 분리는 MCP 서버 내부에서 수행됩니다.
@@ -78,7 +80,7 @@ Godot 프로젝트 사이트에 맞는 최근 디자인 레퍼런스 3개를 GDW
     "includePreviousYear": true,
     "language": "Korean",
     "outputDirectory": "/absolute/path/to/design-index",
-    "maxTokens": 20000
+    "maxTokens": 32000
   }
 }
 ```
@@ -93,7 +95,8 @@ Godot 프로젝트 사이트에 맞는 최근 디자인 레퍼런스 3개를 GDW
 flowchart TD
     User["사용자 요청"] --> Host["호스트 LLM"]
     Host --> Tool["generate-gdweb-design-indexes 1회 호출"]
-    Tool --> Search["GDWEB 내부 검색"]
+    Tool --> Exclusions["웹에서 관리한 제외 목록 로드"]
+    Exclusions --> Search["GDWEB 내부 검색 후 작품 번호 필터"]
     Search --> Queue["결과는 서버 내부에만 보관"]
     Queue --> R1["작품 1 이미지 + 명세 계약"]
     R1 --> S1["독립 sampling/createMessage 요청 1"]
@@ -114,6 +117,7 @@ flowchart TD
 - 각 sampling 요청의 `includeContext`는 `none`입니다.
 - 한 sampling 요청에는 작품 하나의 메타데이터와 이미지 조각만 포함됩니다.
 - 이전 작품의 ID, 이미지, 분석 문서는 다음 작품 요청에 전달되지 않습니다.
+- 웹에서 제외한 작품은 sampling 요청을 만들기 전 검색 결과에서 제거됩니다.
 - sampling 응답을 파일로 저장한 뒤에만 다음 작품 요청을 시작합니다.
 - 마지막에는 생성 파일 경로, 사용 모델, 성공·실패 상태만 호스트에 반환합니다.
 
@@ -127,7 +131,8 @@ flowchart TD
 
 - 생성 실행: 검색어, 요청 개수, 허용 연도, 전체 상태
 - 작품 목록: `gdweb-<작품번호>`별 진행 상태와 근거 이미지 수
-- 작품 상세: 선택한 작품 하나의 명세서, 근거 이미지, 요청 계약, 생성 기록
+- 작품 상세: 선택한 작품 하나의 명세서, 근거 이미지와 측정값, 요청 계약, 생성 기록
+- 검색 제외: 선택 작품을 다음 검색에서 제외하거나 다시 포함하고 전체 제외 목록 관리
 
 작품이 세 개면 다음처럼 문서도 세 개가 생성됩니다.
 
@@ -150,6 +155,20 @@ flowchart TD
 
 `run.json`은 여러 작품의 문서 본문을 합친 파일이 아닙니다. 작품별 파일 경로, 상태, 시간, 모델과 근거 목록만 담는 웹 표시용 manifest입니다.
 
+### 검색 제외 목록
+
+웹에서 `검색 제외`를 누르면 다음 파일에 작품 번호가 저장됩니다.
+
+```text
+DESIGN_INDEX_OUTPUT_DIR/.secret-mcp/exclusions.json
+```
+
+- 과거 실행과 생성 문서는 삭제하지 않습니다.
+- 새 `generate-gdweb-design-indexes` 실행과 `search-gdweb-designs` 실행에서 작품 번호를 먼저 필터링합니다.
+- 제외 때문에 결과가 부족하지 않도록 더 많은 GDWEB 후보를 읽은 뒤 요청한 `limit`만큼 비제외 작품을 선택합니다.
+- `제외 해제`를 누르면 이후 검색부터 다시 후보에 포함됩니다.
+- MCP와 웹이 동일한 `DESIGN_INDEX_OUTPUT_DIR`을 사용해야 같은 제외 목록을 봅니다.
+
 ## 이미지 처리
 
 GDWEB의 전체 데스크톱 캡처는 세로 길이가 매우 길고 수 MB에 이를 수 있습니다. 원본 base64를 그대로 sampling 요청에 넣으면 MCP 전송 한계를 넘거나 시각 모델이 세부 구조를 놓칠 수 있습니다.
@@ -162,9 +181,12 @@ GDWEB의 전체 데스크톱 캡처는 세로 길이가 매우 길고 수 MB에 
 - 긴 페이지를 1600px 높이의 겹치는 세로 타일로 분리
 - 모바일 이미지는 별도 증거 이미지로 유지
 - JPEG로 압축해 MCP sampling 요청 크기 제한 완화
-- 각 조각에 원본 종류, 순서, 전체 조각 수, 크기와 출처 표시
+- 각 조각에 원본·준비 캔버스 크기, 축소 비율, 준비 좌표의 `x/y/width/height`, 원본 환산 좌표와 출처 표시
+- 각 조각에서 대표 색상 8개를 측정해 HEX, RGB, HSL과 픽셀 점유율 기록
 
 한 작품의 여러 조각은 동일한 작품 전용 sampling 요청 안에 들어갑니다. 다른 작품의 조각은 절대 같은 요청에 포함하지 않습니다.
+
+대표 색상은 정규화된 스크린샷 픽셀을 샘플링한 측정값입니다. 따라서 화면 비교를 위한 정확한 근거이지만, JPEG 오차와 이미지 콘텐츠가 포함되므로 원본 사이트의 CSS 변수였다고 단정하지 않습니다. 생성 계약은 `MEASURED` 색상과 구현용 `INFERRED` 토큰을 구분하게 합니다.
 
 작품의 실제 운영 사이트를 열거나 DOM을 크롤링하지 않습니다. 시각적 근거는 GDWEB에 등록된 이미지와 메타데이터로 제한됩니다.
 
@@ -209,31 +231,38 @@ GDWEB의 전체 데스크톱 캡처는 세로 길이가 매우 길고 수 MB에 
 
 ## DESIGN_INDEX 명세
 
-각 독립 sampling 요청은 `secret-mcp/design-index/v1` 계약을 전달합니다. 결과 파일명은 `DESIGN_INDEX_gdweb-<strNo>.md`입니다.
+각 독립 sampling 요청은 `secret-mcp/design-index/v2` 계약을 전달합니다. 결과 파일명은 `DESIGN_INDEX_gdweb-<strNo>.md`입니다.
 
-문서에는 다음 15개 영역이 모두 있어야 합니다.
+작품별 파일은 하나지만, 파일 내부에는 먼저 페이지·라우트 목록이 나오고 확인된 페이지마다 완전한 하위 명세가 반복됩니다. 긴 스크롤 캡처의 섹션을 서로 다른 페이지로 오인하지 않으며, 콜라주에서 별도 화면이 확인될 때만 페이지를 나눕니다.
+
+문서에는 다음 19개 numbered section이 모두 있어야 합니다.
 
 | 영역 | 반드시 명세할 내용 |
 | --- | --- |
 | 재구성 목표 | 참조 ID, 목표 충실도, 라우트, 대상 뷰포트, 비목표 |
-| 근거 목록 | 이미지 종류·크기·출처·가시 범위·한계 |
-| 정보 구조 | 헤더부터 푸터까지 순서, 섹션 역할과 컴포넌트 순서 |
-| 섹션 레이아웃 | DOM 계층, grid/flex, 폭, 여백, 비율, 정렬, 고정·겹침 관계 |
-| 컴포넌트 추상화 | 컴포넌트 트리, props, variants, slots, 상태, 이벤트, 데이터 계약 |
-| 디자인 토큰 | 색상, 타이포그래피, 간격, radius, border, shadow, z-index, breakpoint, motion |
-| 타이포그래피 | 글꼴, 크기, 굵기, 행간, 정렬, 말줄임, 반응형 변화 |
-| 에셋 명세 | 역할, 비율, crop, focal point, object-fit, 우선순위, 대체 전략 |
-| 반응형 규칙 | 열 축소, 순서 변경, 숨김·대체, 내비게이션, 간격, 이미지 crop, 터치 영역 |
-| 상호작용·모션 | 링크, 버튼, 탭, 폼, hover/focus/pressed/disabled, 스크롤, 전환 |
-| 접근성 | landmark, heading, 키보드, focus, label, alt, contrast, reduced motion |
-| 프론트엔드 구조 | 라우트, 디렉터리, 모듈, 스타일링, 데이터 모델, 상태 소유권, 서버·클라이언트 경계 |
-| 구현 작업 그래프 | 작업 ID, 의존성, 입력·출력, 대상 컴포넌트, 완료 조건, 병렬화 가능 범위 |
-| 인수 조건 | 데스크톱·모바일 비교, overflow, 텍스트, 에셋, 키보드, 성능 검사 |
-| 불확실성과 결정 | 이미지에서 확인 불가능한 항목과 대신 채택한 구현 결정 |
+| 근거·좌표계 | 이미지 ID, 원본/준비 크기, 배율, 타일 좌표, 원본 환산 좌표, 겹침 제거 방식 |
+| 사이트 맵 | 확인된 페이지·라우트, 목적, 근거 이미지, 공통 셸, 활성 메뉴, 신뢰도 |
+| 공통 앱 셸 | 전역 배경, 컨테이너, 거터, 오버레이, 페이지 크롬과 stacking context |
+| 내비게이션 | 데스크톱·모바일 높이, 로고/메뉴 좌표, 간격, 터치 영역, active/hover/focus/open 상태 |
+| 페이지별 명세·좌표표 | 페이지마다 캔버스 모델, 섹션 순서, x/y/width/height, 레이아웃, 상태, 데이터와 근거 수준 |
+| 레이아웃 상세 | DOM, grid/flex, track, min/max, 비율, gap, overflow, sticky, absolute, z-index |
+| 컴포넌트 추상화 | 페이지 연결 컴포넌트 트리, props, variants, slots, 상태, 이벤트, 데이터 계약 |
+| 토큰·정확 색상 | HEX/RGB/HSL/alpha, 사용 위치, 측정 좌표, 신뢰도, 허용 오차, CSS 변수 |
+| 타이포그래피 | 역할별 글꼴, px/rem, 굵기, 행간, 자간, 정렬, 말줄임과 반응형 값 |
+| 에셋·아이콘 | 페이지·섹션, 표시 크기, 비율, crop, focal point, object-fit, 로딩, 대체 전략 |
+| 반응형 행렬 | 1440/1280/1024/768/390/360px별 컨테이너, 열, 순서, 노출, 내비게이션과 간격 |
+| 상호작용·모션 | 상태별 색상·opacity·transform·duration·easing·키보드·reduced motion |
+| 접근성 | 페이지별 landmark, heading, focus, 메뉴 semantics, label, alt, contrast, touch target |
+| 데이터·콘텐츠 | 페이지 엔티티, 필드, 개수, 정렬, 포맷, 다국어, loading/empty/error fixture |
+| 프론트엔드 구조 | 라우트, 디렉터리, 페이지/공통 모듈, 토큰, 에셋, 상태, 서버·클라이언트 경계 |
+| 구현 작업 그래프 | 측정, 셸, 내비게이션, 페이지별 작업 ID, 의존성, 산출물, 완료 조건 |
+| 페이지별 인수 조건 | 좌표·색상·타이포 허용 오차, 뷰포트 비교, overflow, 에셋, 키보드, 성능 |
+| 불확실성과 결정 | 페이지/섹션별 UNKNOWN, 채택값, 대안, 신뢰도와 추가 필요 근거 |
 
 모든 주요 판단은 다음 근거 수준 중 하나로 표시합니다.
 
 - `OBSERVED`: GDWEB 이미지나 메타데이터에서 직접 확인됨
+- `MEASURED`: 전달된 픽셀 좌표나 측정 팔레트에서 수치로 확인됨
 - `INFERRED`: 동일한 결과를 구현하기 위해 합리적으로 추론함
 - `UNKNOWN`: 정적 이미지로 확인할 수 없으며 사실처럼 단정하지 않음
 
@@ -273,8 +302,10 @@ Bing, Brave, DuckDuckGo와 Playwright는 일반 검색 경로에서만 사용됩
 secret_mcp/
 ├── src/
 │   ├── index.ts                         MCP 도구 등록과 sampling 요청
-│   ├── dashboard-server.ts              로컬 웹 서버와 읽기 전용 API
+│   ├── dashboard-server.ts              로컬 웹 서버와 문서·제외 목록 API
 │   ├── design-index-run-store.ts         run manifest와 작품별 산출물 기록
+│   ├── design-exclusion-store.ts         영구 검색 제외 목록의 추가·해제
+│   ├── design-index-paths.ts             MCP·웹의 공통 출력 경로 해석
 │   ├── gdweb-design-search.ts           GDWEB 검색, 연도 필터, 등록 이미지 로드
 │   ├── gdweb-design-index-generator.ts  작품별 직렬 생성과 Markdown 저장
 │   ├── gdweb-sampling-images.ts         긴 캡처 축소, 분할, 압축
@@ -315,6 +346,9 @@ npm run web
 - `includeContext: none`인지
 - 요청마다 GDWEB 이미지가 포함되는지
 - 결과마다 별도 Markdown 파일이 생성되는지
+- 제외한 작품이 이후 검색과 sampling 요청에 들어오지 않는지
+- 명세 계약에 페이지별·내비게이션·좌표·색상 요구가 포함되는지
+- run manifest 근거에 타일 좌표와 측정 팔레트가 기록되는지
 
 ## 런타임 환경변수
 

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { CreateMessageRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { DesignExclusionStore } from '../dist/design-exclusion-store.js';
 
 const configuredOutputDirectory = process.env.SMOKE_OUTPUT_DIR;
 const outputDirectory = configuredOutputDirectory
@@ -34,6 +35,20 @@ client.setRequestHandler(CreateMessageRequestSchema, async request => {
   if (request.params.includeContext !== 'none') {
     throw new Error(`${referenceId} inherited another context`);
   }
+  const requiredContractMarkers = [
+    'Schema: secret-mcp/design-index/v2',
+    'Site Map and Page/Route Inventory',
+    'Navigation and Header Specification',
+    'Page-by-Page Specifications',
+    'Prepared full canvas:',
+    'Measured representative colors:',
+  ];
+  const missingMarker = requiredContractMarkers.find(marker =>
+    !text.includes(marker)
+  );
+  if (missingMarker) {
+    throw new Error(`${referenceId} is missing contract marker: ${missingMarker}`);
+  }
 
   samples.push({ referenceId, imageCount, text });
   return {
@@ -47,19 +62,40 @@ client.setRequestHandler(CreateMessageRequestSchema, async request => {
         '',
         `This document describes only **${referenceId}**.`,
         '',
-        '## Page Information Architecture',
+        '## Site Map and Page/Route Inventory',
         '',
-        '| Order | Section | Layout |',
+        '| Page ID | Route | Purpose | Evidence |',
+        '| --- | --- | --- | --- |',
+        '| P-01 | `/` | Primary project page | desktop 1-N, mobile 1 |',
+        '',
+        '## Navigation and Header Specification',
+        '',
+        '| Property | Desktop | Mobile |',
         '| --- | --- | --- |',
-        '| 1 | Header | Full-width navigation |',
-        '| 2 | Hero | Two-column editorial composition |',
-        '| 3 | Content | Responsive card grid |',
+        '| Header height | 72px | 56px |',
+        '| Horizontal padding | 32px | 16px |',
+        '| Logo bounds | 140 x 28px | 112 x 24px |',
+        '',
+        '## Page P-01: Primary Project Page',
+        '',
+        '| Section ID | Bounds | Layout |',
+        '| --- | --- | --- |',
+        '| P01-S01 | x:0 y:0 w:1200 h:72 | Full-width navigation |',
+        '| P01-S02 | x:0 y:72 w:1200 h:640 | Two-column hero |',
+        '| P01-S03 | x:0 y:712 w:1200 h:900 | Responsive card grid |',
         '',
         '## Component Abstraction',
         '',
         '- `AppShell` owns the page landmarks.',
         '- `SiteHeader` owns navigation and mobile disclosure state.',
         '- `HeroSection` owns the primary message and visual asset.',
+        '',
+        '## Design Tokens and Exact Color Specification',
+        '',
+        '| Token | HEX | RGB | HSL | Evidence |',
+        '| --- | --- | --- | --- | --- |',
+        '| `--surface` | `#FFFFFF` | `rgb(255, 255, 255)` | `hsl(0, 0%, 100%)` | MEASURED desktop crop |',
+        '| `--text` | `#111111` | `rgb(17, 17, 17)` | `hsl(0, 0%, 7%)` | INFERRED from screenshot |',
         '',
         '## Responsive Specification',
         '',
@@ -86,6 +122,36 @@ const transport = new StdioClientTransport({
 
 try {
   await client.connect(transport);
+  const preview = await client.callTool({
+    name: 'search-gdweb-designs',
+    arguments: {
+      query: process.env.QUERY || '금융',
+      limit: 1,
+      year: process.env.YEAR ? Number(process.env.YEAR) : undefined,
+      awardOnly: true,
+      includePreviousYear: true,
+    },
+  });
+  const previewText = preview.content
+    .filter(item => item.type === 'text')
+    .map(item => item.text)
+    .join('\n');
+  const excludedReferenceId =
+    previewText.match(/Reference ID: (gdweb-\d+)/)?.[1];
+  const excludedUrl = previewText.match(/GDWEB URL: (.+)/)?.[1]?.trim();
+  const excludedTitle =
+    previewText.match(/\*\*1\. (.+)\*\*/)?.[1]?.trim();
+  if (preview.isError || !excludedReferenceId || !excludedUrl || !excludedTitle) {
+    throw new Error(`Unable to select an exclusion fixture:\n${previewText}`);
+  }
+  const exclusionStore = new DesignExclusionStore(outputDirectory);
+  await exclusionStore.add({
+    referenceId: excludedReferenceId,
+    title: excludedTitle,
+    gdwebUrl: excludedUrl,
+    reason: 'Isolation smoke exclusion',
+  });
+
   const result = await client.callTool({
     name: 'generate-gdweb-design-indexes',
     arguments: {
@@ -115,6 +181,9 @@ try {
   }
   if (new Set(samples.map(sample => sample.referenceId)).size !== expectedCount) {
     throw new Error('Sampling requests did not contain distinct references');
+  }
+  if (samples.some(sample => sample.referenceId === excludedReferenceId)) {
+    throw new Error(`${excludedReferenceId} was sampled after being excluded`);
   }
 
   for (const sample of samples) {
@@ -150,15 +219,29 @@ try {
       item.status !== 'generated' ||
       !item.documentPath ||
       !item.contractPath ||
-      item.evidence.length === 0
+      item.evidence.length === 0 ||
+      item.evidence.some(evidence =>
+        evidence.cropTop === undefined ||
+        evidence.sourceCropTop === undefined ||
+        !Array.isArray(evidence.representativeColors) ||
+        evidence.representativeColors.length === 0
+      )
     )
   ) {
     throw new Error('Run manifest is missing per-reference artifacts');
+  }
+  if (
+    !manifest.exclusions?.activeAtStart?.some(
+      item => item.referenceId === excludedReferenceId
+    )
+  ) {
+    throw new Error('Run manifest did not record the active exclusion');
   }
 
   console.log(JSON.stringify({
     runId: manifest.runId,
     runDirectory: manifest.runDirectory,
+    excludedReferenceId,
     samplingRequests: samples.map(({ referenceId, imageCount }) => ({
       referenceId,
       imageCount,

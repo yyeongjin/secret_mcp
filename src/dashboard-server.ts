@@ -11,13 +11,17 @@ import {
   DesignIndexRunItem,
   DesignIndexRunManifest,
 } from './design-index-run-store.js';
+import {
+  AddDesignExclusionInput,
+  DesignExclusionStore,
+} from './design-exclusion-store.js';
+import { resolveDesignIndexOutputDirectory } from './design-index-paths.js';
 
 const port = Number(process.env.SECRET_MCP_WEB_PORT ?? 4317);
 const host = process.env.SECRET_MCP_WEB_HOST ?? '127.0.0.1';
-const outputDirectory = path.resolve(
-  process.env.DESIGN_INDEX_OUTPUT_DIR ?? path.join(process.cwd(), 'design-index')
-);
+const outputDirectory = resolveDesignIndexOutputDirectory();
 const runsDirectory = path.join(outputDirectory, '.secret-mcp-runs');
+const exclusionStore = new DesignExclusionStore(outputDirectory);
 const webDirectory = fileURLToPath(new URL('../web', import.meta.url));
 const require = createRequire(import.meta.url);
 const lucideScript = require.resolve('lucide/dist/umd/lucide.min.js');
@@ -25,7 +29,8 @@ const safeIdentifier = /^[a-zA-Z0-9._-]+$/;
 const app = express();
 
 app.disable('x-powered-by');
-app.use('/assets', express.static(webDirectory, { etag: true, maxAge: '1h' }));
+app.use('/api', express.json({ limit: '16kb' }));
+app.use('/assets', express.static(webDirectory, { etag: true, maxAge: 0 }));
 app.get('/vendor/lucide.min.js', (_request, response) => {
   response.sendFile(lucideScript);
 });
@@ -35,8 +40,46 @@ app.get('/api/health', (_request, response) => {
     ok: true,
     outputDirectory,
     runsDirectory,
+    exclusionsPath: exclusionStore.filePath,
     now: new Date().toISOString(),
   });
+});
+
+app.get('/api/exclusions', async (_request, response, next) => {
+  try {
+    response.setHeader('Cache-Control', 'no-store');
+    response.json({
+      filePath: exclusionStore.filePath,
+      items: await exclusionStore.list(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/exclusions', async (request, response, next) => {
+  try {
+    const input = parseExclusionInput(request.body);
+    const item = await exclusionStore.add(input);
+    response.status(201).json({
+      item,
+      items: await exclusionStore.list(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/exclusions/:referenceId', async (request, response, next) => {
+  try {
+    const removed = await exclusionStore.remove(request.params.referenceId);
+    response.json({
+      removed,
+      items: await exclusionStore.list(),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get('/api/runs', async (_request, response, next) => {
@@ -112,6 +155,7 @@ app.get(
 );
 
 app.get('/', (_request, response) => {
+  response.setHeader('Cache-Control', 'no-store');
   response.sendFile(path.join(webDirectory, 'index.html'));
 });
 
@@ -126,7 +170,12 @@ app.use((request, response, next) => {
 app.use((error: unknown, _request: Request, response: Response, next: NextFunction) => {
   void next;
   const message = error instanceof Error ? error.message : 'Unknown server error';
-  const status = message === 'Not found' ? 404 : 500;
+  const status =
+    error instanceof HttpError
+      ? error.status
+      : message === 'Not found'
+        ? 404
+        : 500;
   console.error('[Dashboard]', error);
   response.status(status).json({ error: message });
 });
@@ -251,6 +300,68 @@ function assertIdentifier(value: string): void {
   if (!safeIdentifier.test(value)) throw new Error('Not found');
 }
 
+function parseExclusionInput(value: unknown): AddDesignExclusionInput {
+  if (!value || typeof value !== 'object') {
+    throw new HttpError(400, 'Invalid exclusion request');
+  }
+  const input = value as Record<string, unknown>;
+  const referenceId = readRequiredString(input.referenceId, 'referenceId', 64);
+  const title = readRequiredString(input.title, 'title', 300);
+  const gdwebUrl = readRequiredString(input.gdwebUrl, 'gdwebUrl', 1000);
+  const reason = readOptionalString(input.reason, 'reason', 300);
+  const sourceRunId = readOptionalString(input.sourceRunId, 'sourceRunId', 160);
+
+  if (!/^gdweb-\d+$/.test(referenceId)) {
+    throw new HttpError(400, 'Invalid exclusion referenceId');
+  }
+  try {
+    const url = new URL(gdwebUrl);
+    if (
+      !url.hostname.endsWith('gdweb.co.kr') ||
+      !url.pathname.endsWith('/sub/view.asp')
+    ) {
+      throw new Error('not a GDWEB design URL');
+    }
+  } catch {
+    throw new HttpError(400, 'Invalid exclusion gdwebUrl');
+  }
+
+  return {
+    referenceId,
+    title,
+    gdwebUrl,
+    reason,
+    sourceRunId,
+  };
+}
+
+function readRequiredString(
+  value: unknown,
+  field: string,
+  maxLength: number
+): string {
+  if (
+    typeof value !== 'string' ||
+    value.trim().length === 0 ||
+    value.trim().length > maxLength
+  ) {
+    throw new HttpError(400, `Invalid exclusion ${field}`);
+  }
+  return value.trim();
+}
+
+function readOptionalString(
+  value: unknown,
+  field: string,
+  maxLength: number
+): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string' || value.trim().length > maxLength) {
+    throw new HttpError(400, `Invalid exclusion ${field}`);
+  }
+  return value.trim();
+}
+
 function isMissingFile(error: unknown): boolean {
   return (
     typeof error === 'object' &&
@@ -258,4 +369,13 @@ function isMissingFile(error: unknown): boolean {
     'code' in error &&
     (error as { code?: string }).code === 'ENOENT'
   );
+}
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message);
+  }
 }

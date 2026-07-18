@@ -1,5 +1,6 @@
 const state = {
   runs: [],
+  exclusions: [],
   selectedRunId: new URLSearchParams(window.location.search).get('run'),
   selectedReferenceId: null,
   activeTab: 'document',
@@ -13,6 +14,8 @@ const state = {
 const elements = {
   connection: document.querySelector('#connectionState'),
   refreshButton: document.querySelector('#refreshButton'),
+  exclusionsButton: document.querySelector('#exclusionsButton'),
+  exclusionCount: document.querySelector('#exclusionCount'),
   runCount: document.querySelector('#runCount'),
   runList: document.querySelector('#runList'),
   watchPath: document.querySelector('#watchPath'),
@@ -28,6 +31,10 @@ const elements = {
   zoomOutButton: document.querySelector('#zoomOutButton'),
   zoomInButton: document.querySelector('#zoomInButton'),
   closeDialogButton: document.querySelector('#closeDialogButton'),
+  exclusionsDialog: document.querySelector('#exclusionsDialog'),
+  closeExclusionsButton: document.querySelector('#closeExclusionsButton'),
+  exclusionList: document.querySelector('#exclusionList'),
+  exclusionsPath: document.querySelector('#exclusionsPath'),
   toast: document.querySelector('#toast'),
 };
 
@@ -47,6 +54,7 @@ const statusLabels = {
 
 const eventLabels = {
   'run.created': '작업 생성',
+  'search.exclusions.applied': '검색 제외 목록 적용',
   'search.completed': 'GDWEB 검색 완료',
   'item.evidence.loading': '작품 근거 불러오기',
   'item.evidence.preparing': '이미지 근거 분할 및 압축',
@@ -59,6 +67,11 @@ const eventLabels = {
 };
 
 elements.refreshButton.addEventListener('click', () => refresh(true));
+elements.exclusionsButton.addEventListener('click', () => {
+  renderExclusionDialog();
+  elements.exclusionsDialog.showModal();
+  refreshIcons();
+});
 elements.viewerTabs.addEventListener('click', event => {
   const button = event.target.closest('[data-tab]');
   if (!button) return;
@@ -77,6 +90,14 @@ elements.imageDialog.addEventListener('click', event => {
   if (event.target === elements.imageDialog) elements.imageDialog.close();
 });
 elements.imageDialog.addEventListener('close', () => setZoom(1));
+elements.closeExclusionsButton.addEventListener('click', () => {
+  elements.exclusionsDialog.close();
+});
+elements.exclusionsDialog.addEventListener('click', event => {
+  if (event.target === elements.exclusionsDialog) {
+    elements.exclusionsDialog.close();
+  }
+});
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) refresh(false);
@@ -98,13 +119,15 @@ async function refresh(userInitiated) {
   }
 
   try {
-    const [health, runsPayload] = await Promise.all([
+    const [health, runsPayload, exclusionsPayload] = await Promise.all([
       fetchJson('/api/health'),
       fetchJson('/api/runs'),
+      fetchJson('/api/exclusions'),
     ]);
     if (version !== state.requestVersion) return;
     state.health = health;
     state.runs = runsPayload.runs;
+    state.exclusions = exclusionsPayload.items;
     ensureSelection();
     renderAll();
     setConnection(true);
@@ -141,12 +164,15 @@ function ensureSelection() {
 
 function renderAll() {
   elements.runCount.textContent = String(state.runs.length);
+  elements.exclusionCount.textContent = String(state.exclusions.length);
+  elements.exclusionCount.hidden = state.exclusions.length === 0;
   elements.watchPath.textContent = state.health?.runsDirectory ?? '';
   elements.watchPath.title = state.health?.runsDirectory ?? '';
   renderRunList();
   renderRunOverview();
   renderReferenceList();
   renderViewerHeader();
+  renderExclusionDialog();
   updateTabState();
   renderActiveView();
   refreshIcons();
@@ -196,11 +222,13 @@ function renderRunOverview() {
 
   const finished = run.generated + run.failed;
   const progress = run.total > 0 ? Math.round((finished / run.total) * 100) : 0;
+  const exclusionCount = run.exclusions?.activeAtStart?.length ?? 0;
   elements.runOverview.innerHTML = `
     <span class="eyebrow">${escapeHtml(run.runId.slice(-8).toUpperCase())}</span>
     <h2>${escapeHtml(run.query)}</h2>
     <p>${escapeHtml(formatDateTime(run.createdAt))} · ${escapeHtml(formatRunRange(run))}</p>
     <p>작품별 독립 요청 · includeContext: ${escapeHtml(run.isolation?.includeContext || 'none')}</p>
+    <p>검색 시작 시 제외 필터 ${exclusionCount}개 적용</p>
     <div class="summary-grid">
       ${summaryCell(run.total, '작품')}
       ${summaryCell(run.generated, '생성')}
@@ -226,14 +254,18 @@ function renderReferenceList() {
   elements.referenceList.innerHTML = run.items.map((item, index) => {
     const active =
       item.referenceId === state.selectedReferenceId ? ' is-active' : '';
+    const excluded = isExcluded(item.referenceId);
     return `
-      <button class="reference-item${active}" type="button" data-reference-id="${escapeHtml(item.referenceId)}">
+      <button class="reference-item${active}${excluded ? ' is-excluded' : ''}" type="button" data-reference-id="${escapeHtml(item.referenceId)}">
         <span class="reference-number">${String(index + 1).padStart(2, '0')} · ${escapeHtml(item.referenceId)}</span>
         <strong>${escapeHtml(item.title)}</strong>
         <p>${escapeHtml(item.award || item.concept || 'GDWEB reference')}</p>
         <div class="item-meta">
           ${statusMarkup(item.status)}
-          <span class="run-time">${item.evidence.length}장</span>
+          <span class="reference-side-meta">
+            ${excluded ? '<span class="excluded-label">검색 제외</span>' : ''}
+            <span class="run-time">${item.evidence.length}장</span>
+          </span>
         </div>
       </button>
     `;
@@ -260,6 +292,7 @@ function renderViewerHeader() {
     return;
   }
 
+  const excluded = isExcluded(item.referenceId);
   elements.viewerHeader.innerHTML = `
     <div class="viewer-title-row">
       <div>
@@ -267,12 +300,26 @@ function renderViewerHeader() {
         <h2>${escapeHtml(item.title)}</h2>
         <p>${escapeHtml(item.registeredDate || '등록일 미상')} · ${escapeHtml(item.productionCompany || '제작사 미상')} · ${escapeHtml(item.model || statusLabels[item.status] || item.status)}</p>
       </div>
-      <a class="external-link" href="${escapeAttribute(item.gdwebUrl)}" target="_blank" rel="noreferrer noopener">
-        <span>GDWEB</span>
-        <i data-lucide="external-link"></i>
-      </a>
+      <div class="viewer-actions">
+        <button
+          class="command-button exclusion-toggle${excluded ? ' is-active' : ''}"
+          type="button"
+          data-exclusion-toggle
+          title="${excluded ? '다음 검색에 다시 포함' : '다음 검색에서 제외'}"
+        >
+          <i data-lucide="${excluded ? 'rotate-ccw' : 'list-x'}"></i>
+          <span>${excluded ? '제외 해제' : '검색 제외'}</span>
+        </button>
+        <a class="external-link" href="${escapeAttribute(item.gdwebUrl)}" target="_blank" rel="noreferrer noopener">
+          <span>GDWEB</span>
+          <i data-lucide="external-link"></i>
+        </a>
+      </div>
     </div>
   `;
+  elements.viewerHeader
+    .querySelector('[data-exclusion-toggle]')
+    .addEventListener('click', () => toggleExclusion(getSelectedRun(), item));
 }
 
 function updateTabState() {
@@ -390,6 +437,7 @@ function renderEvidence(run, item) {
                   <span>${evidence.width} × ${evidence.height}</span>
                   <span>${formatBytes(evidence.byteLength)}</span>
                 </div>
+                ${renderEvidenceMeasurement(evidence)}
               </figcaption>
             </figure>
           `;
@@ -436,6 +484,9 @@ function eventDetail(event) {
   }
   if (event.code === 'item.sampling.started') {
     return `${event.detail || '0'}개 이미지 근거를 포함한 독립 요청입니다.`;
+  }
+  if (event.code === 'search.exclusions.applied') {
+    return event.detail || '제외 항목이 적용되었습니다.';
   }
   if (event.referenceId) return event.referenceId;
   return event.detail || 'Secret MCP';
@@ -515,6 +566,141 @@ function getSelectedItem() {
   ) ?? null;
 }
 
+function isExcluded(referenceId) {
+  return state.exclusions.some(item => item.referenceId === referenceId);
+}
+
+async function toggleExclusion(run, item) {
+  if (!run || !item) return;
+  const excluded = isExcluded(item.referenceId);
+  const button = elements.viewerHeader.querySelector('[data-exclusion-toggle]');
+  if (button) button.disabled = true;
+
+  try {
+    const payload = excluded
+      ? await fetchJson(`/api/exclusions/${encodeURIComponent(item.referenceId)}`, {
+          method: 'DELETE',
+        })
+      : await fetchJson('/api/exclusions', {
+          method: 'POST',
+          body: JSON.stringify({
+            referenceId: item.referenceId,
+            title: item.title,
+            gdwebUrl: item.gdwebUrl,
+            reason: '웹 뷰어에서 수동 제외',
+            sourceRunId: run.runId,
+          }),
+        });
+    state.exclusions = payload.items;
+    elements.exclusionCount.textContent = String(state.exclusions.length);
+    elements.exclusionCount.hidden = state.exclusions.length === 0;
+    renderReferenceList();
+    renderViewerHeader();
+    renderExclusionDialog();
+    refreshIcons();
+    showToast(
+      excluded
+        ? `${item.referenceId}를 다음 검색에 다시 포함합니다.`
+        : `${item.referenceId}를 다음 검색에서 제외합니다.`
+    );
+  } catch (error) {
+    showToast(error.message);
+    renderViewerHeader();
+    refreshIcons();
+  }
+}
+
+function renderExclusionDialog() {
+  elements.exclusionsPath.textContent =
+    state.health?.exclusionsPath ?? '';
+  elements.exclusionsPath.title =
+    state.health?.exclusionsPath ?? '';
+
+  if (state.exclusions.length === 0) {
+    elements.exclusionList.innerHTML = emptyMarkup(
+      'list-checks',
+      '제외한 작품이 없습니다',
+      ''
+    );
+    refreshIcons();
+    return;
+  }
+
+  elements.exclusionList.innerHTML = state.exclusions.map(item => `
+    <div class="exclusion-item">
+      <div class="exclusion-copy">
+        <span class="eyebrow">${escapeHtml(item.referenceId.toUpperCase())}</span>
+        <strong>${escapeHtml(item.title)}</strong>
+        <p>${escapeHtml(item.reason)}</p>
+        <time>${escapeHtml(formatDateTime(item.createdAt))}</time>
+      </div>
+      <button
+        class="icon-button exclusion-remove"
+        type="button"
+        data-exclusion-remove="${escapeAttribute(item.referenceId)}"
+        title="제외 해제"
+        aria-label="${escapeAttribute(`${item.title} 제외 해제`)}"
+      >
+        <i data-lucide="rotate-ccw"></i>
+      </button>
+    </div>
+  `).join('');
+
+  elements.exclusionList
+    .querySelectorAll('[data-exclusion-remove]')
+    .forEach(button => {
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const payload = await fetchJson(
+            `/api/exclusions/${encodeURIComponent(button.dataset.exclusionRemove)}`,
+            { method: 'DELETE' }
+          );
+          state.exclusions = payload.items;
+          elements.exclusionCount.textContent = String(state.exclusions.length);
+          elements.exclusionCount.hidden = state.exclusions.length === 0;
+          renderReferenceList();
+          renderViewerHeader();
+          renderExclusionDialog();
+          refreshIcons();
+          showToast('검색 제외를 해제했습니다.');
+        } catch (error) {
+          button.disabled = false;
+          showToast(error.message);
+        }
+      });
+    });
+  refreshIcons();
+}
+
+function renderEvidenceMeasurement(evidence) {
+  if (
+    evidence.cropTop === undefined ||
+    !Array.isArray(evidence.representativeColors)
+  ) {
+    return '';
+  }
+  const palette = evidence.representativeColors.map(color => `
+    <span
+      class="palette-swatch"
+      style="--swatch:${escapeAttribute(color.hex)}"
+      title="${escapeAttribute(`${color.hex} · ${formatPercent(color.coverage)}`)}"
+    >
+      <span aria-hidden="true"></span>
+      <code>${escapeHtml(color.hex)}</code>
+    </span>
+  `).join('');
+
+  return `
+    <div class="evidence-measurement">
+      <code>canvas ${evidence.preparedCanvasWidth}x${evidence.preparedCanvasHeight} scale ${formatScale(evidence.scaleX)}x</code>
+      <code>crop x:${evidence.cropLeft} y:${evidence.cropTop} w:${evidence.width} h:${evidence.height}</code>
+      <code>source y:${evidence.sourceCropTop} h:${evidence.sourceCropHeight}</code>
+      <div class="palette-row">${palette}</div>
+    </div>
+  `;
+}
+
 function setConnection(online) {
   elements.connection.classList.toggle('is-online', online);
   elements.connection.classList.toggle('is-offline', !online);
@@ -536,9 +722,14 @@ function setZoom(value) {
   elements.zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, options = {}) {
   const response = await fetch(url, {
-    headers: { Accept: 'application/json' },
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
+    },
     cache: 'no-store',
   });
   if (!response.ok) {
@@ -605,6 +796,14 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatPercent(value) {
+  return `${Number((Number(value || 0) * 100).toFixed(2))}%`;
+}
+
+function formatScale(value) {
+  return Number(Number(value || 0).toFixed(4));
 }
 
 function escapeHtml(value) {

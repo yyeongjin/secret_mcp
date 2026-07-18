@@ -1,6 +1,6 @@
 {
   "name": "secret-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Local MCP server and web viewer for isolated per-result GDWEB design specifications",
   "license": "MIT",
   "type": "module",

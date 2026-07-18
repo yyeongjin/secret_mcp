@@ -15,6 +15,7 @@ export interface GdwebDesignSearchOptions {
   year?: number;
   awardOnly?: boolean;
   includePreviousYear?: boolean;
+  excludeStrNos?: string[];
 }
 
 export interface GdwebDesignResult {
@@ -53,6 +54,7 @@ export interface GdwebDesignReference {
 interface GdwebSearchCandidate {
   gdwebUrl: string;
   registeredYear: number;
+  strNo: string;
 }
 
 export class GdwebDesignSearch {
@@ -66,10 +68,16 @@ export class GdwebDesignSearch {
     const awardOnly = options.awardOnly ?? true;
     const includePreviousYear = options.includePreviousYear ?? true;
     const allowedYears = includePreviousYear ? [targetYear, targetYear - 1] : [targetYear];
+    const excludedStrNos = new Set(options.excludeStrNos ?? []);
     const candidates = await this.searchGdweb(query);
+    const candidateLimit = Math.min(
+      Math.max(options.limit * 4, 20),
+      40
+    );
     const freshCandidates = candidates
       .filter(candidate => allowedYears.includes(candidate.registeredYear))
-      .slice(0, Math.min(options.limit * 4, 40));
+      .filter(candidate => !excludedStrNos.has(candidate.strNo))
+      .slice(0, candidateLimit);
 
     const parsedResults = await Promise.all(
       freshCandidates.map(candidate => this.parseDetailPage(candidate.gdwebUrl))
@@ -79,6 +87,7 @@ export class GdwebDesignSearch {
       .filter((result): result is GdwebDesignResult => result !== null)
       .filter(result => allowedYears.includes(result.registeredYear))
       .filter(result => !awardOnly || result.award.length > 0)
+      .filter(result => !excludedStrNos.has(result.strNo))
       .slice(0, options.limit);
   }
 
@@ -135,9 +144,15 @@ export class GdwebDesignSearch {
 
       const gdwebUrl = this.normalizeGdwebUrl(href);
       if (!gdwebUrl || seen.has(gdwebUrl)) return;
+      const identity = this.getDesignIdentity(gdwebUrl);
+      if (!identity) return;
 
       seen.add(gdwebUrl);
-      candidates.push({ gdwebUrl, registeredYear });
+      candidates.push({
+        gdwebUrl,
+        registeredYear,
+        strNo: identity.strNo,
+      });
     });
 
     return candidates;

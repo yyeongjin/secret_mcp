@@ -10,6 +10,8 @@ import {
   GdwebSamplingImage,
   prepareGdwebSamplingImages,
 } from './gdweb-sampling-images.js';
+import { DesignExclusionStore } from './design-exclusion-store.js';
+import { resolveDesignIndexOutputDirectory } from './design-index-paths.js';
 import { DesignIndexRunStore } from './design-index-run-store.js';
 
 export interface GdwebDesignIndexGenerationOptions extends GdwebDesignSearchOptions {
@@ -50,6 +52,7 @@ export interface GdwebDesignIndexGenerationResult {
   total: number;
   generated: number;
   failed: number;
+  excluded: number;
   items: GdwebDesignIndexItemResult[];
 }
 
@@ -66,13 +69,13 @@ export class GdwebDesignIndexGenerator {
   async generate(
     options: GdwebDesignIndexGenerationOptions
   ): Promise<GdwebDesignIndexGenerationResult> {
-    const outputDirectory = path.resolve(
-      options.outputDirectory ??
-        process.env.DESIGN_INDEX_OUTPUT_DIR ??
-        path.join(process.cwd(), 'design-index')
+    const outputDirectory = resolveDesignIndexOutputDirectory(
+      options.outputDirectory
     );
     const items: GdwebDesignIndexItemResult[] = [];
     const targetYear = options.year ?? new Date().getFullYear();
+    const exclusionStore = new DesignExclusionStore(outputDirectory);
+    const exclusions = await exclusionStore.list();
     const runStore = await DesignIndexRunStore.create({
       query: options.query,
       language: options.language,
@@ -81,11 +84,15 @@ export class GdwebDesignIndexGenerator {
       includePreviousYear: options.includePreviousYear ?? true,
       awardOnly: options.awardOnly ?? true,
       outputDirectory,
+      exclusions,
     });
     let designs: GdwebDesignResult[];
 
     try {
-      designs = await this.gdwebDesignSearch.search(options);
+      designs = await this.gdwebDesignSearch.search({
+        ...options,
+        excludeStrNos: exclusions.map(item => item.strNo),
+      });
       await runStore.setSearchResults(designs);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown search error';
@@ -105,18 +112,18 @@ export class GdwebDesignIndexGenerator {
           'item.evidence.loading'
         );
         const reference = await this.gdwebDesignSearch.getDesignReference(design.gdwebUrl);
-        const contract = buildDesignSpecContract(reference);
-        const contractPath = await runStore.saveContract(referenceId, contract);
         await runStore.updateItem(
           referenceId,
-          { status: 'preparing_images', contractPath },
+          { status: 'preparing_images' },
           'item.evidence.preparing'
         );
         const samplingImages = await prepareGdwebSamplingImages(reference.images);
+        const contract = buildDesignSpecContract(reference, samplingImages);
+        const contractPath = await runStore.saveContract(referenceId, contract);
         const evidence = await runStore.saveEvidence(referenceId, samplingImages);
         await runStore.updateItem(
           referenceId,
-          { status: 'sampling', evidence },
+          { status: 'sampling', contractPath, evidence },
           'item.sampling.started',
           String(samplingImages.length)
         );
@@ -191,6 +198,7 @@ export class GdwebDesignIndexGenerator {
       total: designs.length,
       generated: items.filter(item => item.status === 'generated').length,
       failed: items.filter(item => item.status === 'failed').length,
+      excluded: exclusions.length,
       items,
     };
   }

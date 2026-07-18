@@ -19,6 +19,16 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <button
+          class="icon-button exclusion-button"
+          id="exclusionsButton"
+          type="button"
+          title="검색 제외 목록"
+          aria-label="검색 제외 목록"
+        >
+          <i data-lucide="list-x"></i>
+          <span class="exclusion-count" id="exclusionCount">0</span>
+        </button>
         <div class="connection" id="connectionState" aria-live="polite">
           <span class="connection-dot"></span>
           <span>연결 확인 중</span>
@@ -114,6 +124,26 @@
       <div class="dialog-canvas">
         <img id="dialogImage" alt="" />
       </div>
+    </dialog>
+
+    <dialog class="exclusions-dialog" id="exclusionsDialog">
+      <div class="exclusions-dialog-header">
+        <div>
+          <span class="eyebrow">FILTER</span>
+          <h2>검색 제외 목록</h2>
+        </div>
+        <button
+          class="icon-button"
+          id="closeExclusionsButton"
+          type="button"
+          title="닫기"
+          aria-label="닫기"
+        >
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <div class="exclusion-list" id="exclusionList"></div>
+      <div class="exclusions-path" id="exclusionsPath"></div>
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

@@ -11,6 +11,8 @@ import {
   GdwebDesignIndexGenerator,
   GdwebDesignIndexSampleRequest,
 } from './gdweb-design-index-generator.js';
+import { DesignExclusionStore } from './design-exclusion-store.js';
+import { resolveDesignIndexOutputDirectory } from './design-index-paths.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
@@ -24,7 +26,7 @@ class SecretMCPServer {
   constructor() {
     this.server = new McpServer({
       name: 'secret-mcp',
-      version: '0.5.0',
+      version: '0.6.0',
     });
 
     this.searchEngine = new SearchEngine();
@@ -161,7 +163,7 @@ class SecretMCPServer {
     // Register a GDWEB-specific design search with strict freshness filtering.
     this.server.tool(
       'search-gdweb-designs',
-      'Use this tool only when the user wants a lightweight list of GDWEB references. It returns metadata for multiple results and does not generate implementation documents. For layout analysis, frontend specifications, DESIGN_INDEX files, or implementation planning, use generate-gdweb-design-indexes instead so every result is processed by a separate isolated LLM request.',
+      'Use this tool only when the user wants a lightweight list of GDWEB references. It applies the dashboard-managed exclusion list before returning results, returns metadata for multiple results, and does not generate implementation documents. For layout analysis, frontend specifications, DESIGN_INDEX files, or implementation planning, use generate-gdweb-design-indexes instead so every result is processed by a separate isolated LLM request.',
       {
         query: z.string().min(1).describe('Natural-language design reference query to search directly on GDWEB'),
         limit: z.union([z.number(), z.string()]).transform((val) => {
@@ -228,6 +230,10 @@ class SecretMCPServer {
           const parsed = schema.parse(args);
           const targetYear = parsed.year ?? new Date().getFullYear();
           const allowedYears = parsed.includePreviousYear ? [targetYear, targetYear - 1] : [targetYear];
+          const exclusionStore = new DesignExclusionStore(
+            resolveDesignIndexOutputDirectory()
+          );
+          const exclusions = await exclusionStore.list();
 
           const results = await this.gdwebDesignSearch.search({
             query: parsed.query,
@@ -235,10 +241,12 @@ class SecretMCPServer {
             year: targetYear,
             awardOnly: parsed.awardOnly,
             includePreviousYear: parsed.includePreviousYear,
+            excludeStrNos: exclusions.map(item => item.strNo),
           });
 
           let responseText = `GDWEB design search for "${parsed.query}" with ${results.length} result(s).\n`;
           responseText += `Filters: years=${allowedYears.join(', ')} (strict), awardOnly=${parsed.awardOnly}\n\n`;
+          responseText += `Dashboard exclusions applied before result selection: ${exclusions.length}\n\n`;
 
           if (results.length === 0) {
             responseText += `No GDWEB results survived the strict ${allowedYears.join(', ')} filter.`;
@@ -276,7 +284,7 @@ class SecretMCPServer {
     // Generate one file per result through one isolated MCP sampling request per result.
     this.server.tool(
       'generate-gdweb-design-indexes',
-      'Automatically use this tool when the user asks to find GDWEB references and create layout analysis, frontend specifications, implementation plans, or DESIGN_INDEX files. This tool performs the GDWEB search internally and sends one completely separate MCP sampling/createMessage request per result. Each isolated request contains only one result and has no previous-result context. It writes one DESIGN_INDEX_gdweb-<strNo>.md file before starting the next request, then returns only file paths and statuses to the calling LLM. Never replace this tool with search-gdweb-designs plus a combined summary. The connected MCP client must support sampling.',
+      'Automatically use this tool when the user asks to find GDWEB references and create layout analysis, frontend specifications, implementation plans, or DESIGN_INDEX files. This tool applies the dashboard-managed exclusion list, performs the GDWEB search internally, and sends one completely separate MCP sampling/createMessage request per non-excluded result. Each isolated request contains only one result and has no previous-result context. It writes one page-by-page, measurement-first DESIGN_INDEX_gdweb-<strNo>.md file before starting the next request, then returns only file paths and statuses to the calling LLM. Never replace this tool with search-gdweb-designs plus a combined summary. The connected MCP client must support sampling.',
       {
         query: z.string().min(1).describe('Natural-language design query to search directly on GDWEB'),
         limit: z.union([z.number(), z.string()]).transform((val) => {
@@ -313,7 +321,7 @@ class SecretMCPServer {
             throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
           }
           return num;
-        }).default(20000).describe('Maximum tokens requested for each isolated LLM sampling call'),
+        }).default(32000).describe('Maximum tokens requested for each isolated page-by-page specification (2,000-50,000)'),
       },
       async (args: unknown) => {
         console.error(`[MCP] Tool call received: generate-gdweb-design-indexes`);
@@ -356,7 +364,7 @@ class SecretMCPServer {
                 throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
               }
               return num;
-            }).default(20000),
+            }).default(32000),
           });
           const parsed = schema.parse(args);
           const clientCapabilities = this.server.server.getClientCapabilities();
@@ -376,6 +384,7 @@ class SecretMCPServer {
             `Search results: ${result.total}`,
             `Generated: ${result.generated}`,
             `Failed: ${result.failed}`,
+            `Active exclusions applied: ${result.excluded}`,
             '',
           ];
 
@@ -610,11 +619,24 @@ class SecretMCPServer {
     ];
 
     samplingImages.forEach((image) => {
+      const palette = image.representativeColors
+        .map(color =>
+          `${color.hex}/${color.rgb}/${color.hsl}/${Number((color.coverage * 100).toFixed(2))}%`
+        )
+        .join(', ');
       messages.push({
         role: 'user',
         content: {
           type: 'text',
-          text: `Evidence image for gdweb-${reference.design.strNo}: ${image.sourceKind} part ${image.part}/${image.totalParts}, ${image.width}x${image.height}, ${image.byteLength} bytes, source=${image.sourceUrl}`,
+          text: [
+            `Evidence image for gdweb-${reference.design.strNo}: ${image.sourceKind} part ${image.part}/${image.totalParts}.`,
+            `Source canvas: ${image.sourceWidth}x${image.sourceHeight}px.`,
+            `Prepared full canvas: ${image.preparedCanvasWidth}x${image.preparedCanvasHeight}px at scale x=${image.scaleX.toFixed(4)}, y=${image.scaleY.toFixed(4)}.`,
+            `Attached prepared crop: x=${image.cropLeft}, y=${image.cropTop}, width=${image.width}, height=${image.height}.`,
+            `Mapped source crop: x=${image.sourceCropLeft}, y=${image.sourceCropTop}, width=${image.sourceCropWidth}, height=${image.sourceCropHeight}.`,
+            `Measured representative colors: ${palette || 'unavailable'}.`,
+            `Encoded bytes: ${image.byteLength}. Source: ${image.sourceUrl}`,
+          ].join(' '),
         },
       });
       messages.push({
@@ -632,9 +654,10 @@ class SecretMCPServer {
     );
     const response = await this.server.server.createMessage({
       systemPrompt: [
-        'You are a senior frontend specification author.',
+        'You are a senior frontend measurement and specification author.',
         'Analyze only the single GDWEB reference provided in this sampling request.',
-        'Produce a reconstruction-grade DESIGN_INDEX document, not a multi-reference summary.',
+        'Produce a page-by-page, measurement-first reconstruction DESIGN_INDEX, not a multi-reference summary.',
+        'Navigation geometry, section bounds, exact color formats, responsive values, evidence coordinates, confidence, and visual QA tolerances are mandatory.',
       ].join(' '),
       messages,
       includeContext: 'none',

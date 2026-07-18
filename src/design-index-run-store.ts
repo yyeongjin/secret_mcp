@@ -1,8 +1,12 @@
 import { mkdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { DesignExclusion } from './design-exclusion-store.js';
 import { GdwebDesignResult } from './gdweb-design-search.js';
-import { GdwebSamplingImage } from './gdweb-sampling-images.js';
+import {
+  GdwebSampledColor,
+  GdwebSamplingImage,
+} from './gdweb-sampling-images.js';
 
 export type DesignIndexRunStatus =
   | 'searching'
@@ -36,6 +40,19 @@ export interface DesignIndexEvidenceRecord {
   byteLength: number;
   sourceUrl: string;
   relativePath: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  preparedCanvasWidth: number;
+  preparedCanvasHeight: number;
+  scaleX: number;
+  scaleY: number;
+  cropLeft: number;
+  cropTop: number;
+  sourceCropLeft: number;
+  sourceCropTop: number;
+  sourceCropWidth: number;
+  sourceCropHeight: number;
+  representativeColors: GdwebSampledColor[];
 }
 
 export interface DesignIndexRunItem {
@@ -79,6 +96,9 @@ export interface DesignIndexRunManifest {
     strategy: 'one-result-per-sampling-request';
     includeContext: 'none';
   };
+  exclusions: {
+    activeAtStart: DesignExclusion[];
+  };
   items: DesignIndexRunItem[];
   events: DesignIndexRunEvent[];
 }
@@ -91,6 +111,7 @@ interface CreateRunOptions {
   includePreviousYear: boolean;
   awardOnly: boolean;
   outputDirectory: string;
+  exclusions: DesignExclusion[];
 }
 
 export class DesignIndexRunStore {
@@ -141,9 +162,19 @@ export class DesignIndexRunStore {
         strategy: 'one-result-per-sampling-request',
         includeContext: 'none',
       },
+      exclusions: {
+        activeAtStart: options.exclusions,
+      },
       items: [],
       events: [{ at: createdAt, code: 'run.created' }],
     };
+    if (options.exclusions.length > 0) {
+      manifest.events.push({
+        at: createdAt,
+        code: 'search.exclusions.applied',
+        detail: options.exclusions.map(item => item.referenceId).join(', '),
+      });
+    }
     const store = new DesignIndexRunStore(runDirectory, manifest);
 
     await Promise.all([
@@ -221,6 +252,19 @@ export class DesignIndexRunStore {
         byteLength: image.byteLength,
         sourceUrl: image.sourceUrl,
         relativePath,
+        sourceWidth: image.sourceWidth,
+        sourceHeight: image.sourceHeight,
+        preparedCanvasWidth: image.preparedCanvasWidth,
+        preparedCanvasHeight: image.preparedCanvasHeight,
+        scaleX: image.scaleX,
+        scaleY: image.scaleY,
+        cropLeft: image.cropLeft,
+        cropTop: image.cropTop,
+        sourceCropLeft: image.sourceCropLeft,
+        sourceCropTop: image.sourceCropTop,
+        sourceCropWidth: image.sourceCropWidth,
+        sourceCropHeight: image.sourceCropHeight,
+        representativeColors: image.representativeColors,
       });
     }
 
