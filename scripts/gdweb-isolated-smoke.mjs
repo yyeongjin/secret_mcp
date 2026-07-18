@@ -1,11 +1,18 @@
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { CreateMessageRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
-const outputDirectory = await mkdtemp(path.join(tmpdir(), 'secret-mcp-isolated-'));
+const configuredOutputDirectory = process.env.SMOKE_OUTPUT_DIR;
+const outputDirectory = configuredOutputDirectory
+  ? path.resolve(configuredOutputDirectory)
+  : await mkdtemp(path.join(tmpdir(), 'secret-mcp-isolated-'));
+const keepOutput = process.env.KEEP_SMOKE_OUTPUT === 'true';
+if (configuredOutputDirectory) {
+  await mkdir(outputDirectory, { recursive: true });
+}
 const samples = [];
 const client = new Client(
   { name: 'gdweb-isolated-smoke', version: '1.0.0' },
@@ -33,7 +40,38 @@ client.setRequestHandler(CreateMessageRequestSchema, async request => {
     role: 'assistant',
     content: {
       type: 'text',
-      text: `# ${referenceId}\n\nIsolated smoke document for ${referenceId}.\n`,
+      text: [
+        `# ${referenceId} Design Specification`,
+        '',
+        '## Reconstruction Goal',
+        '',
+        `This document describes only **${referenceId}**.`,
+        '',
+        '## Page Information Architecture',
+        '',
+        '| Order | Section | Layout |',
+        '| --- | --- | --- |',
+        '| 1 | Header | Full-width navigation |',
+        '| 2 | Hero | Two-column editorial composition |',
+        '| 3 | Content | Responsive card grid |',
+        '',
+        '## Component Abstraction',
+        '',
+        '- `AppShell` owns the page landmarks.',
+        '- `SiteHeader` owns navigation and mobile disclosure state.',
+        '- `HeroSection` owns the primary message and visual asset.',
+        '',
+        '## Responsive Specification',
+        '',
+        'Desktop uses a constrained 1200px content container. Mobile collapses all columns to one and preserves a minimum 44px touch target.',
+        '',
+        '## Acceptance Criteria',
+        '',
+        '- No horizontal overflow at 390px, 768px, or 1440px.',
+        '- Every interactive element has a visible focus state.',
+        '- Screenshot comparison is performed independently for this reference.',
+        '',
+      ].join('\n'),
     },
     model: 'isolated-smoke-model',
     stopReason: 'endTurn',
@@ -65,6 +103,7 @@ try {
     .map(item => item.text)
     .join('\n');
   const expectedCount = Number(resultText.match(/Generated: (\d+)/)?.[1]);
+  const manifestPath = resultText.match(/Run manifest: (.+)/)?.[1]?.trim();
 
   if (result.isError) {
     throw new Error(`Isolated generation tool failed:\n${resultText}`);
@@ -87,20 +126,39 @@ try {
     }
   }
 
-  const files = (await readdir(outputDirectory)).sort();
+  if (!manifestPath) {
+    throw new Error('Tool result did not return a run manifest path');
+  }
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const files = (await readdir(path.join(manifest.runDirectory, 'documents'))).sort();
   if (files.length !== expectedCount) {
     throw new Error(`Expected ${expectedCount} files, got ${files.length}`);
   }
 
   for (const file of files) {
     const referenceId = file.match(/gdweb-\d+/)?.[0];
-    const document = await readFile(path.join(outputDirectory, file), 'utf8');
+    const document = await readFile(
+      path.join(manifest.runDirectory, 'documents', file),
+      'utf8'
+    );
     if (!referenceId || !document.includes(referenceId)) {
       throw new Error(`${file} contains the wrong isolated document`);
     }
   }
+  if (
+    manifest.items.some(item =>
+      item.status !== 'generated' ||
+      !item.documentPath ||
+      !item.contractPath ||
+      item.evidence.length === 0
+    )
+  ) {
+    throw new Error('Run manifest is missing per-reference artifacts');
+  }
 
   console.log(JSON.stringify({
+    runId: manifest.runId,
+    runDirectory: manifest.runDirectory,
     samplingRequests: samples.map(({ referenceId, imageCount }) => ({
       referenceId,
       imageCount,
@@ -109,5 +167,7 @@ try {
   }, null, 2));
 } finally {
   await client.close();
-  await rm(outputDirectory, { recursive: true, force: true });
+  if (!keepOutput) {
+    await rm(outputDirectory, { recursive: true, force: true });
+  }
 }

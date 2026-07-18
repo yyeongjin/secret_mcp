@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>Secret MCP Design Index Viewer</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <i data-lucide="panels-top-left"></i>
+        </span>
+        <div>
+          <h1>Secret MCP</h1>
+          <p>Design Index Viewer</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="connection" id="connectionState" aria-live="polite">
+          <span class="connection-dot"></span>
+          <span>연결 확인 중</span>
+        </div>
+        <button
+          class="icon-button"
+          id="refreshButton"
+          type="button"
+          title="새로고침"
+          aria-label="새로고침"
+        >
+          <i data-lucide="refresh-cw"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="runs-pane" aria-label="생성 작업">
+        <div class="pane-heading">
+          <div>
+            <span class="eyebrow">RUNS</span>
+            <h2>생성 작업</h2>
+          </div>
+          <span class="count" id="runCount">0</span>
+        </div>
+        <div class="run-list" id="runList"></div>
+        <div class="watch-path" id="watchPath"></div>
+      </aside>
+
+      <section class="references-pane" aria-label="작품별 문서">
+        <div class="run-overview" id="runOverview"></div>
+        <div class="reference-list" id="referenceList"></div>
+      </section>
+
+      <main class="viewer-pane">
+        <div class="viewer-header" id="viewerHeader"></div>
+        <nav class="viewer-tabs" id="viewerTabs" aria-label="작품 정보 보기">
+          <button type="button" data-tab="document" class="tab is-active">
+            <i data-lucide="file-text"></i>
+            <span>명세서</span>
+          </button>
+          <button type="button" data-tab="evidence" class="tab">
+            <i data-lucide="images"></i>
+            <span>근거 이미지</span>
+          </button>
+          <button type="button" data-tab="contract" class="tab">
+            <i data-lucide="scroll-text"></i>
+            <span>요청 계약</span>
+          </button>
+          <button type="button" data-tab="events" class="tab">
+            <i data-lucide="activity"></i>
+            <span>생성 기록</span>
+          </button>
+        </nav>
+        <div class="viewer-content" id="viewerContent"></div>
+      </main>
+    </div>
+
+    <dialog class="image-dialog" id="imageDialog">
+      <div class="dialog-toolbar">
+        <div id="dialogTitle"></div>
+        <div class="dialog-actions">
+          <button
+            class="icon-button"
+            id="zoomOutButton"
+            type="button"
+            title="축소"
+            aria-label="축소"
+          >
+            <i data-lucide="zoom-out"></i>
+          </button>
+          <span class="zoom-value" id="zoomValue">100%</span>
+          <button
+            class="icon-button"
+            id="zoomInButton"
+            type="button"
+            title="확대"
+            aria-label="확대"
+          >
+            <i data-lucide="zoom-in"></i>
+          </button>
+          <button
+            class="icon-button"
+            id="closeDialogButton"
+            type="button"
+            title="닫기"
+            aria-label="닫기"
+          >
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+      </div>
+      <div class="dialog-canvas">
+        <img id="dialogImage" alt="" />
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/vendor/lucide.min.js"></script>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>

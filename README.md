@@ -1,8 +1,8 @@
 # Secret MCP
 
-GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청을 생성해** 재구현 가능한 `DESIGN_INDEX` 문서를 만드는 로컬 MCP(Model Context Protocol) 서버입니다.
+GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다.
 
-여러 작품의 이미지와 설명을 한 LLM 문맥에 한꺼번에 넣어 요약하지 않습니다. 서버가 검색 결과를 내부에서 순서대로 처리하며, 작품마다 독립된 MCP `sampling/createMessage` 요청을 만들고 문서 하나를 저장한 뒤 다음 작품으로 넘어갑니다.
+여러 작품의 이미지와 설명을 한 LLM 문맥이나 한 문서에 합치지 않습니다. 서버가 검색 결과를 내부에서 순서대로 처리하며, 작품마다 독립된 MCP `sampling/createMessage` 요청을 만들고 작품별 파일을 저장한 뒤 다음 작품으로 넘어갑니다. 별도 로컬 웹 프로그램에서는 작품을 하나씩 선택해 사용 근거, LLM 계약, 생성 기록과 최종 문서를 확인할 수 있습니다.
 
 ## 사용 방법
 
@@ -15,7 +15,23 @@ npm install
 npm run build
 ```
 
-### 2. MCP 등록
+### 2. 웹 프로그램 실행
+
+MCP와 웹 프로그램이 같은 출력 폴더를 보도록 `DESIGN_INDEX_OUTPUT_DIR` 값을 동일하게 지정합니다.
+
+```bash
+DESIGN_INDEX_OUTPUT_DIR=/absolute/path/to/design-index npm run web
+```
+
+브라우저에서 다음 주소를 엽니다.
+
+```text
+http://127.0.0.1:4317
+```
+
+웹 프로그램은 디버거가 아닙니다. 생성 실행 목록, 작품별 진행 상태, GDWEB 근거 이미지, LLM에 전달한 명세 계약, 최종 Markdown과 생성 시간만 읽기 전용으로 보여줍니다.
+
+### 3. MCP 등록
 
 ```json
 {
@@ -26,7 +42,8 @@ npm run build
         "/absolute/path/to/secret_mcp/dist/index.js"
       ],
       "env": {
-        "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index"
+        "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",
+        "SECRET_MCP_WEB_ORIGIN": "http://127.0.0.1:4317"
       }
     }
   }
@@ -37,12 +54,12 @@ MCP 클라이언트는 `sampling/createMessage`를 지원해야 합니다. 지�
 
 서버는 HTTP 포트를 열지 않습니다. 클라이언트가 `node dist/index.js`를 자식 프로세스로 실행하고 stdio로 JSON-RPC 메시지를 주고받습니다.
 
-### 3. LLM에 요청
+### 4. LLM에 요청
 
 별도의 `/web-design` 슬래시 명령은 필요하지 않습니다.
 
 ```text
-GDWEB에서 최근 금융 서비스 디자인 3개를 찾아줘.
+Godot 프로젝트 사이트에 맞는 최근 디자인 레퍼런스 3개를 GDWEB에서 찾아줘.
 각 검색 결과를 반드시 서로 독립된 LLM 요청으로 분석하고,
 결과마다 재구현 가능한 DESIGN_INDEX 문서를 하나씩 생성해줘.
 ```
@@ -55,7 +72,7 @@ GDWEB에서 최근 금융 서비스 디자인 3개를 찾아줘.
 {
   "name": "generate-gdweb-design-indexes",
   "arguments": {
-    "query": "금융",
+    "query": "게임 포트폴리오",
     "limit": 3,
     "awardOnly": true,
     "includePreviousYear": true,
@@ -67,6 +84,8 @@ GDWEB에서 최근 금융 서비스 디자인 3개를 찾아줘.
 ```
 
 `outputDirectory`를 생략하면 `DESIGN_INDEX_OUTPUT_DIR` 환경변수를 사용하고, 환경변수도 없으면 서버 실행 디렉터리의 `design-index` 폴더를 사용합니다.
+
+도구가 완료되면 run ID, run manifest 경로, 작품별 문서 경로와 웹 뷰어 URL을 반환합니다.
 
 ## 핵심 실행 구조
 
@@ -83,7 +102,9 @@ flowchart TD
     R2 --> S2["독립 sampling/createMessage 요청 2"]
     S2 --> F2["DESIGN_INDEX_gdweb-2.md 저장"]
     F2 --> More["작품마다 같은 방식으로 직렬 반복"]
-    More --> Status["호스트에는 파일 경로와 상태만 반환"]
+    More --> Manifest["run.json에 작품별 근거와 상태 기록"]
+    Manifest --> Web["로컬 웹에서 작품 하나씩 열람"]
+    Manifest --> Status["호스트에는 파일 경로와 상태만 반환"]
 ```
 
 중요한 경계는 다음과 같습니다.
@@ -97,6 +118,37 @@ flowchart TD
 - 마지막에는 생성 파일 경로, 사용 모델, 성공·실패 상태만 호스트에 반환합니다.
 
 즉, 호스트 LLM이 모든 결과를 한꺼번에 읽고 통합 요약하는 이전 구조가 아닙니다.
+
+## 웹 뷰어
+
+웹 뷰어는 `DESIGN_INDEX_OUTPUT_DIR/.secret-mcp-runs`를 2.5초 간격으로 읽습니다. MCP 생성 작업과 웹 서버 사이에 별도 데이터베이스나 디버깅 연결은 없습니다.
+
+화면은 세 영역으로 구성됩니다.
+
+- 생성 실행: 검색어, 요청 개수, 허용 연도, 전체 상태
+- 작품 목록: `gdweb-<작품번호>`별 진행 상태와 근거 이미지 수
+- 작품 상세: 선택한 작품 하나의 명세서, 근거 이미지, 요청 계약, 생성 기록
+
+작품이 세 개면 다음처럼 문서도 세 개가 생성됩니다.
+
+```text
+.secret-mcp-runs/<run-id>/
+├── run.json
+├── contracts/
+│   ├── gdweb-26905.md
+│   ├── gdweb-26522.md
+│   └── gdweb-xxxxx.md
+├── evidence/
+│   ├── gdweb-26905_desktop_01-of-05.jpg
+│   ├── gdweb-26522_desktop_01-of-04.jpg
+│   └── ...
+└── documents/
+    ├── DESIGN_INDEX_gdweb-26905.md
+    ├── DESIGN_INDEX_gdweb-26522.md
+    └── DESIGN_INDEX_gdweb-xxxxx.md
+```
+
+`run.json`은 여러 작품의 문서 본문을 합친 파일이 아닙니다. 작품별 파일 경로, 상태, 시간, 모델과 근거 목록만 담는 웹 표시용 manifest입니다.
 
 ## 이미지 처리
 
@@ -221,6 +273,8 @@ Bing, Brave, DuckDuckGo와 Playwright는 일반 검색 경로에서만 사용됩
 secret_mcp/
 ├── src/
 │   ├── index.ts                         MCP 도구 등록과 sampling 요청
+│   ├── dashboard-server.ts              로컬 웹 서버와 읽기 전용 API
+│   ├── design-index-run-store.ts         run manifest와 작품별 산출물 기록
 │   ├── gdweb-design-search.ts           GDWEB 검색, 연도 필터, 등록 이미지 로드
 │   ├── gdweb-design-index-generator.ts  작품별 직렬 생성과 Markdown 저장
 │   ├── gdweb-sampling-images.ts         긴 캡처 축소, 분할, 압축
@@ -231,6 +285,10 @@ secret_mcp/
 │   ├── rate-limiter.ts                  일반 검색 요청 제한
 │   ├── types.ts                         검색 및 도구 타입
 │   └── utils.ts                         URL, 텍스트, 타임스탬프 유틸리티
+├── web/
+│   ├── index.html                       웹 뷰어 화면
+│   ├── styles.css                       데스크톱·모바일 레이아웃
+│   └── app.js                           run 갱신과 작품별 문서 전환
 ├── .github/workflows/
 │   ├── ci.yml                           빌드, lint, 패키지 검증
 │   ├── gdweb-smoke.yml                  GDWEB 실검색과 이미지 검증
@@ -245,6 +303,8 @@ secret_mcp/
 ```bash
 npm run build
 npm run lint
+npm run smoke:gdweb-isolation
+npm run web
 ```
 
 격리 smoke test는 sampling을 지원하는 가짜 MCP 클라이언트를 연결해 다음을 검증합니다.
@@ -261,6 +321,9 @@ npm run lint
 | 이름 | 기본값 | 설명 |
 | --- | --- | --- |
 | `DESIGN_INDEX_OUTPUT_DIR` | `./design-index` | 생성된 문서 저장 디렉터리 |
+| `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | MCP 결과에 표시할 웹 뷰어 주소 |
+| `SECRET_MCP_WEB_HOST` | `127.0.0.1` | 웹 서버 bind 주소 |
+| `SECRET_MCP_WEB_PORT` | `4317` | 웹 서버 포트 |
 | `MAX_CONTENT_LENGTH` | `500000` | 일반 페이지에서 추출할 본문 최대 길이 |
 | `DEFAULT_TIMEOUT` | `6000` | 일반 HTTP 및 브라우저 요청 timeout |
 | `MAX_BROWSERS` | `3` | 일반 추출용 최대 브라우저 수 |

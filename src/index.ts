@@ -11,7 +11,6 @@ import {
   GdwebDesignIndexGenerator,
   GdwebDesignIndexSampleRequest,
 } from './gdweb-design-index-generator.js';
-import { prepareGdwebSamplingImages } from './gdweb-sampling-images.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
@@ -25,7 +24,7 @@ class SecretMCPServer {
   constructor() {
     this.server = new McpServer({
       name: 'secret-mcp',
-      version: '0.4.0',
+      version: '0.5.0',
     });
 
     this.searchEngine = new SearchEngine();
@@ -371,6 +370,9 @@ class SecretMCPServer {
           const lines = [
             `GDWEB isolated design-index generation completed for "${result.query}".`,
             `Output directory: ${result.outputDirectory}`,
+            `Run ID: ${result.runId}`,
+            `Run manifest: ${result.manifestPath}`,
+            `Viewer: ${process.env.SECRET_MCP_WEB_ORIGIN ?? 'http://127.0.0.1:4317'}/?run=${encodeURIComponent(result.runId)}`,
             `Search results: ${result.total}`,
             `Generated: ${result.generated}`,
             `Failed: ${result.failed}`,
@@ -582,8 +584,7 @@ class SecretMCPServer {
   private async sampleGdwebDesignIndex(
     request: GdwebDesignIndexSampleRequest
   ): Promise<{ markdown: string; model: string }> {
-    const { reference, contract, language, maxTokens } = request;
-    const samplingImages = await prepareGdwebSamplingImages(reference.images);
+    const { reference, contract, samplingImages, language, maxTokens } = request;
     const messages: Array<{
       role: 'user';
       content:

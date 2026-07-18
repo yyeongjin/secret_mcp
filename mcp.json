@@ -6,7 +6,8 @@
         "/absolute/path/to/secret_mcp/dist/index.js"
       ],
       "env": {
-        "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index"
+        "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",
+        "SECRET_MCP_WEB_ORIGIN": "http://127.0.0.1:4317"
       }
     }
   }
