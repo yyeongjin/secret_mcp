@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>gdweb-26905 재현 비교</title>
+    <link rel="stylesheet" href="./compare.css" />
+  </head>
+  <body>
+    <header class="compare-header">
+      <div>
+        <span class="run-id">GDWEB-26905</span>
+        <h1>기후금융포털 재현 비교</h1>
+      </div>
+      <div class="compare-actions">
+        <div class="view-tabs" role="tablist" aria-label="비교 화면">
+          <button
+            class="is-active"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            data-view-button="desktop"
+          >
+            Desktop
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected="false"
+            data-view-button="mobile"
+          >
+            Mobile
+          </button>
+        </div>
+        <a href="./index.html" target="_blank">결과물 열기</a>
+      </div>
+    </header>
+
+    <section class="metrics" aria-label="비교 지표">
+      <dl>
+        <div><dt>근거</dt><dd>1200 × 6935</dd></div>
+        <div><dt>결과</dt><dd>1200 × 6783</dd></div>
+        <div><dt>높이 차이</dt><dd>-2.2%</dd></div>
+        <div><dt>섹션 순서</dt><dd>7 / 7</dd></div>
+      </dl>
+    </section>
+
+    <main>
+      <section class="comparison-view is-active" data-view="desktop">
+        <div class="column-heading">
+          <div>
+            <span>REFERENCE</span>
+            <strong>근거 이미지</strong>
+          </div>
+          <div>
+            <span>RECONSTRUCTION</span>
+            <strong>재구성 결과</strong>
+          </div>
+        </div>
+        <div class="comparison-columns">
+          <figure>
+            <img
+              src="./comparison/reference-desktop.jpg"
+              alt="우리금융경영연구소 기후금융포털 데스크톱 근거 이미지"
+            />
+          </figure>
+          <figure>
+            <img
+              src="./comparison/render-desktop.jpg"
+              alt="명세와 근거를 바탕으로 재구성한 데스크톱 결과"
+            />
+          </figure>
+        </div>
+      </section>
+
+      <section class="comparison-view" data-view="mobile">
+        <div class="mobile-note">
+          모바일 근거는 반응형 화면이 아니라 데스크톱 전체 화면을 243px 너비로 축소한 이미지입니다.
+        </div>
+        <div class="column-heading">
+          <div>
+            <span>REFERENCE · 243 × 1404</span>
+            <strong>축소 근거 이미지</strong>
+          </div>
+          <div>
+            <span>RESPONSIVE · 390 × 3982</span>
+            <strong>모바일 재구성 결과</strong>
+          </div>
+        </div>
+        <div class="comparison-columns mobile-columns">
+          <figure>
+            <img
+              src="./comparison/reference-mobile.jpg"
+              alt="243픽셀 너비로 축소된 모바일 근거 이미지"
+            />
+          </figure>
+          <figure>
+            <img
+              src="./comparison/render-mobile.jpg"
+              alt="390픽셀 너비의 반응형 모바일 재구성 결과"
+            />
+          </figure>
+        </div>
+      </section>
+    </main>
+
+    <script src="./compare.js"></script>
+  </body>
+</html>

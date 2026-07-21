@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Secret MCP Workflow Demo</title>
+    <link rel="stylesheet" href="./workflow.css" />
+  </head>
+  <body>
+    <header class="workflow-header">
+      <div class="workflow-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <strong>SECRET MCP</strong>
+          <span>GDWEB DESIGN PIPELINE</span>
+        </div>
+      </div>
+      <div class="run-state">
+        <span class="state-dot" aria-hidden="true"></span>
+        RUN 2026-07-18 · COMPLETED
+      </div>
+    </header>
+
+    <nav class="step-nav" aria-label="파이프라인 단계">
+      <button type="button" data-step-button="1"><span>01</span>요청</button>
+      <button type="button" data-step-button="2"><span>02</span>검색</button>
+      <button type="button" data-step-button="3"><span>03</span>근거</button>
+      <button type="button" data-step-button="4"><span>04</span>격리</button>
+      <button type="button" data-step-button="5"><span>05</span>명세</button>
+      <button type="button" data-step-button="6"><span>06</span>생성</button>
+      <button type="button" data-step-button="7"><span>07</span>검증</button>
+    </nav>
+
+    <main>
+      <section class="step-copy">
+        <span class="step-kicker" data-step-kicker></span>
+        <h1 data-step-title></h1>
+        <p data-step-description></p>
+
+        <ol class="event-log" aria-label="MCP 이벤트">
+          <li data-event="1"><time>11:51:44</time><span>run.created</span></li>
+          <li data-event="2"><time>11:51:45</time><span>search.completed · 2</span></li>
+          <li data-event="3"><time>11:51:46</time><span>item.evidence.preparing</span></li>
+          <li data-event="4"><time>11:51:47</time><span>item.sampling.started · isolated</span></li>
+          <li data-event="5"><time>11:51:47</time><span>item.document.writing</span></li>
+          <li data-event="6"><time>11:51:47</time><span>item.generated</span></li>
+          <li data-event="7"><time>11:51:48</time><span>run.completed</span></li>
+        </ol>
+      </section>
+
+      <section class="stage" aria-live="polite">
+        <article class="stage-panel request-panel" data-panel="1">
+          <div class="terminal-bar">
+            <span></span><span></span><span></span>
+            <strong>CODEX → SECRET MCP</strong>
+          </div>
+          <div class="prompt-line">
+            <span class="prompt-symbol">›</span>
+            <p>금융 관련 GDWEB 디자인을 찾아서 작품별 구현 명세서를 만들어줘</p>
+          </div>
+          <dl class="request-options">
+            <div><dt>SEARCH</dt><dd>GDWEB internal</dd></div>
+            <div><dt>YEARS</dt><dd>2025–2026</dd></div>
+            <div><dt>LIMIT</dt><dd>2 references</dd></div>
+            <div><dt>OUTPUT</dt><dd>One DESIGN_INDEX per work</dd></div>
+          </dl>
+          <div class="command-chip">/web-design 금융</div>
+        </article>
+
+        <article class="stage-panel search-panel" data-panel="2">
+          <header>
+            <div><span>GDWEB SEARCH</span><strong>“금융” 검색 결과</strong></div>
+            <b>2 MATCHES</b>
+          </header>
+          <div class="result-list">
+            <div class="result-row is-selected">
+              <img src="./comparison/workflow-evidence-01.jpg" alt="" />
+              <div><small>GDWEB-26905 · WINNER PRIZE</small><strong>우리금융경영연구소 기후금융포털</strong><span>2026.04.24</span></div>
+              <b>01</b>
+            </div>
+            <div class="result-row">
+              <div class="result-placeholder">W</div>
+              <div><small>GDWEB-26522 · WINNER PRIZE</small><strong>우리금융경영연구소 기후포털</strong><span>2026.02.06</span></div>
+              <b>02</b>
+            </div>
+          </div>
+          <footer><span>브라우저 검색 없음</span><strong>로컬 커스텀 검색엔진 결과</strong></footer>
+        </article>
+
+        <article class="stage-panel evidence-panel" data-panel="3">
+          <header>
+            <div><span>GDWEB-26905</span><strong>시각 근거 수집</strong></div>
+            <b>6 FILES</b>
+          </header>
+          <div class="evidence-grid">
+            <figure><img src="./comparison/workflow-evidence-01.jpg" alt="첫 번째 데스크톱 근거" /><figcaption>DESKTOP · 01/05</figcaption></figure>
+            <figure><img src="./comparison/workflow-evidence-03.jpg" alt="세 번째 데스크톱 근거" /><figcaption>DESKTOP · 03/05</figcaption></figure>
+            <figure><img src="./comparison/workflow-evidence-05.jpg" alt="다섯 번째 데스크톱 근거" /><figcaption>DESKTOP · 05/05</figcaption></figure>
+          </div>
+          <div class="evidence-status"><span>1200 × 6935 stitched</span><strong>페이지 구조 · 색상 · 간격 · 이미지 비율 분석 준비</strong></div>
+        </article>
+
+        <article class="stage-panel document-panel" data-panel="4">
+          <header>
+            <div><span>ISOLATED SAMPLING</span><strong>작품마다 별도 LLM 요청</strong></div>
+            <b>NO SHARED CONTEXT</b>
+          </header>
+          <div class="document-flow">
+            <div class="source-node"><span>gdweb-26905</span><b>6 evidence files</b></div>
+            <div class="flow-arrow">→</div>
+            <div class="model-node"><small>REQUEST 01</small><strong>LLM</strong><span>context: none</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="file-node"><small>DOCUMENT 01</small><strong>DESIGN_INDEX_<br />gdweb-26905.md</strong></div>
+          </div>
+          <div class="document-flow secondary">
+            <div class="source-node"><span>gdweb-26522</span><b>5 evidence files</b></div>
+            <div class="flow-arrow">→</div>
+            <div class="model-node"><small>REQUEST 02</small><strong>LLM</strong><span>context: none</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="file-node"><small>DOCUMENT 02</small><strong>DESIGN_INDEX_<br />gdweb-26522.md</strong></div>
+          </div>
+        </article>
+
+        <article class="stage-panel specification-panel" data-panel="5">
+          <header>
+            <div><span>DESIGN_INDEX_gdweb-26905.md</span><strong>근거 기반 프론트엔드 구현 명세</strong></div>
+            <b>EVIDENCE-AUGMENTED</b>
+          </header>
+          <div class="specification-layout">
+            <aside>
+              <strong>DOCUMENT INDEX</strong>
+              <a class="is-current" href="#spec-overview">01 · Overview</a>
+              <a href="#spec-tokens">02 · Design tokens</a>
+              <a href="#spec-navigation">03 · Navigation</a>
+              <a href="#spec-hero">04 · Hero</a>
+              <a href="#spec-pages">05 · Page sections</a>
+              <a href="#spec-responsive">06 · Responsive</a>
+            </aside>
+            <div class="specification-document">
+              <section id="spec-overview">
+                <span>01 · PAGE GEOMETRY</span>
+                <h2>Home / Climate Finance Portal</h2>
+                <div class="spec-metrics">
+                  <div><small>VIEWPORT</small><strong>1200px</strong></div>
+                  <div><small>PAGE HEIGHT</small><strong>6783px</strong></div>
+                  <div><small>CONTENT</small><strong>1124px</strong></div>
+                  <div><small>SECTIONS</small><strong>7</strong></div>
+                </div>
+              </section>
+              <section id="spec-tokens" class="token-section">
+                <span>02 · COLOR TOKENS</span>
+                <div class="token-row">
+                  <i style="--swatch:#111714"></i><code>--ink #111714</code>
+                  <i style="--swatch:#1464c0"></i><code>--blue #1464C0</code>
+                  <i style="--swatch:#ffffff"></i><code>--paper #FFFFFF</code>
+                  <i style="--swatch:#dfe3e1"></i><code>--line #DFE3E1</code>
+                </div>
+              </section>
+              <section id="spec-navigation">
+                <span>03 · NAVIGATION & HERO</span>
+                <table>
+                  <tbody>
+                    <tr><th>Header</th><td>65px · transparent · 4 primary routes · KR/EN · search</td></tr>
+                    <tr><th>Hero</th><td>770px · full-bleed forest · 2-column intro / portal grid</td></tr>
+                    <tr><th>Search</th><td>604 × 42px · 5 keyword controls · 1px white border</td></tr>
+                    <tr><th>Feed rail</th><td>1124 × 298px · bottom 36px · 3 content items</td></tr>
+                  </tbody>
+                </table>
+              </section>
+              <section id="spec-pages" class="section-map">
+                <span>04 · SECTION MAP</span>
+                <ol>
+                  <li><b>News</b><small>4 rows · 278px each · summaries</small></li>
+                  <li><b>Research</b><small>feature + 4 supporting items</small></li>
+                  <li><b>Emissions</b><small>780px · black Earth band</small></li>
+                  <li><b>Market</b><small>case study + people</small></li>
+                  <li><b>Media</b><small>3-column lecture grid</small></li>
+                </ol>
+              </section>
+              <section id="spec-responsive" class="responsive-row">
+                <span>05 · RESPONSIVE</span>
+                <p><b>≤900px</b> mobile navigation, single-column feed, compact content grids</p>
+                <p><b>≤520px</b> 18px gutters, 610px hero, 44px minimum touch targets</p>
+              </section>
+            </div>
+          </div>
+        </article>
+
+        <article class="stage-panel build-panel" data-panel="6">
+          <div class="browser-frame">
+            <div class="browser-bar"><span></span><span></span><span></span><div>127.0.0.1 · reconstructed result</div></div>
+            <img src="./comparison/render-desktop.jpg" alt="명세 기반 재구성 결과" />
+          </div>
+          <div class="build-caption">
+            <div><span>IMPLEMENTATION</span><strong>명세를 UI 구조로 변환</strong></div>
+            <ul><li>Semantic HTML</li><li>Responsive CSS</li><li>Search & interactions</li></ul>
+          </div>
+        </article>
+
+        <article class="stage-panel verify-panel" data-panel="7">
+          <header>
+            <div><span>VISUAL QA</span><strong>근거 이미지 ↔ 재구성 결과</strong></div>
+            <b>PASS</b>
+          </header>
+          <div class="compare-preview">
+            <figure><img src="./comparison/reference-desktop.jpg" alt="근거 화면" /><figcaption>REFERENCE</figcaption></figure>
+            <figure><img src="./comparison/render-desktop.jpg" alt="재구성 결과" /><figcaption>RECONSTRUCTION</figcaption></figure>
+          </div>
+          <dl class="verify-metrics">
+            <div><dt>WIDTH</dt><dd>1200 = 1200</dd></div>
+            <div><dt>HEIGHT DELTA</dt><dd>-2.2%</dd></div>
+            <div><dt>SECTION ORDER</dt><dd>7 / 7</dd></div>
+            <div><dt>RUNTIME</dt><dd>0 ERRORS</dd></div>
+          </dl>
+        </article>
+      </section>
+    </main>
+
+    <footer class="workflow-footer">
+      <span data-step-count></span>
+      <div><i data-progress></i></div>
+      <strong>GDWEB → EVIDENCE → DESIGN_INDEX → IMPLEMENTATION → VISUAL QA</strong>
+    </footer>
+
+    <script src="./workflow.js"></script>
+  </body>
+</html>
