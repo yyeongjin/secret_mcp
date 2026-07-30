@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta
+      name="description"
+      content="AEROFLOW, a Godot-powered aviation simulation project."
+    >
+    <title>AEROFLOW | Godot Flight Project</title>
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./assets/lucide.min.js" defer></script>
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">본문으로 이동</a>
+
+    <header class="site-header" id="top">
+      <div class="utility-bar">
+        <div class="container utility-inner">
+          <a href="#release"><i data-lucide="gift"></i> 이벤트</a>
+          <a href="#devlog"><i data-lucide="circle-help"></i> 자주 묻는 질문</a>
+          <button class="utility-button" type="button" data-open-help>
+            <i data-lucide="globe-2"></i> 한국어
+          </button>
+          <a href="#community"><i data-lucide="users"></i> 커뮤니티</a>
+        </div>
+      </div>
+
+      <div class="main-nav">
+        <div class="container nav-inner">
+          <a class="brand" href="#top" aria-label="AEROFLOW 홈">
+            <span class="brand-mark" aria-hidden="true">
+              <i data-lucide="plane"></i>
+            </span>
+            <span>AEROFLOW</span>
+            <small>FLIGHT PROJECT</small>
+          </a>
+
+          <nav class="primary-nav" aria-label="주요 메뉴">
+            <a class="active" href="#project">프로젝트</a>
+            <a href="#systems">비행 시스템</a>
+            <a href="#media">미디어</a>
+            <a href="#devlog">개발 기록</a>
+          </nav>
+
+          <div class="nav-actions">
+            <button class="icon-button" type="button" aria-label="도움말 열기" title="도움말" data-open-help>
+              <i data-lucide="search"></i>
+            </button>
+            <a class="button button-outline nav-download" href="#launcher">
+              <i data-lucide="download"></i>
+              플레이
+            </a>
+            <button
+              class="icon-button menu-button"
+              type="button"
+              aria-label="메뉴 열기"
+              aria-controls="mobile-menu"
+              aria-expanded="false"
+            >
+              <i data-lucide="menu"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="mobile-menu" id="mobile-menu" aria-label="모바일 메뉴" hidden>
+        <a href="#project">프로젝트</a>
+        <a href="#systems">비행 시스템</a>
+        <a href="#media">미디어</a>
+        <a href="#devlog">개발 기록</a>
+        <a href="#launcher">다운로드 / 플레이</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="container hero-content">
+          <p class="eyebrow">
+            <span class="status-dot"></span>
+            GODOT 4 · BUILD 0.8.4
+          </p>
+          <h1 id="hero-title">AEROFLOW</h1>
+          <p class="hero-lead">
+            바람과 기체의 반응을 직접 느끼는 오픈 플라이트 프로젝트
+          </p>
+          <div class="hero-facts" aria-label="프로젝트 상태">
+            <span><i data-lucide="map"></i> 6개 비행 구역</span>
+            <span><i data-lucide="plane-takeoff"></i> 4개 기체</span>
+            <span><i data-lucide="cloud-sun"></i> 실시간 기상</span>
+          </div>
+        </div>
+        <p class="hero-caption">실시간 Godot 렌더링 콘셉트 · Fictional aircraft</p>
+      </section>
+
+      <section class="launcher-wrap" id="launcher" aria-labelledby="launcher-title">
+        <div class="container">
+          <div class="launcher">
+            <div class="launcher-tabs" role="tablist" aria-label="실행 모드">
+              <button class="launcher-tab active" type="button" role="tab" aria-selected="true" data-mode="play">
+                <i data-lucide="play"></i>
+                바로 비행
+              </button>
+              <button class="launcher-tab" type="button" role="tab" aria-selected="false" data-mode="builds">
+                <i data-lucide="package-open"></i>
+                빌드
+              </button>
+              <button class="launcher-tab" type="button" role="tab" aria-selected="false" data-mode="controls">
+                <i data-lucide="gamepad-2"></i>
+                조작
+              </button>
+              <button class="launcher-tab" type="button" role="tab" aria-selected="false" data-mode="specs">
+                <i data-lucide="cpu"></i>
+                사양
+              </button>
+            </div>
+
+            <form class="launch-form">
+              <h2 class="sr-only" id="launcher-title">비행 실행 설정</h2>
+              <label class="field">
+                <span>플랫폼</span>
+                <select name="platform">
+                  <option>Windows 64-bit</option>
+                  <option>macOS Universal</option>
+                  <option>Linux x86_64</option>
+                  <option>Web Preview</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>기체</span>
+                <select name="aircraft">
+                  <option>AF-120 Voyager</option>
+                  <option>SR-2 Research</option>
+                  <option>KT-8 Trainer</option>
+                  <option>GL-5 Glider</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>비행 구역</span>
+                <select name="region">
+                  <option>다도해 해안</option>
+                  <option>설악 산악</option>
+                  <option>동해 장거리</option>
+                  <option>제주 훈련 구역</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>기상</span>
+                <select name="weather">
+                  <option>맑은 아침</option>
+                  <option>구름 사이</option>
+                  <option>측풍 접근</option>
+                  <option>해질녘</option>
+                </select>
+              </label>
+              <button class="button button-primary launch-button" type="submit">
+                <i data-lucide="download"></i>
+                빌드 받기
+              </button>
+              <p class="launch-status" aria-live="polite">
+                안정 빌드 · 2.6 GB · 세이브 호환
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section class="release-section" id="release" aria-label="최신 빌드">
+        <div class="container">
+          <a class="release-banner" href="#devlog">
+            <span class="release-icon"><i data-lucide="radio"></i></span>
+            <span>
+              <strong>Build 0.8.4가 이륙했습니다</strong>
+              <small>새로운 구름 시스템과 개선된 착륙 물리를 확인하세요.</small>
+            </span>
+            <span class="release-link">릴리스 노트 <i data-lucide="arrow-right"></i></span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section project-section" id="project" aria-labelledby="project-title">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">PROJECT HIGHLIGHTS</p>
+              <h2 id="project-title">하늘을 구성하는 세 가지 축</h2>
+            </div>
+            <a class="text-link" href="#systems">전체 시스템 <i data-lucide="arrow-up-right"></i></a>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card feature-card-wide">
+              <img src="./assets/hero-flight.webp" alt="섬과 구름 위를 비행하는 가상의 여객기 게임 화면">
+              <div class="feature-card-body">
+                <p class="card-meta">WORLD · REAL-TIME STREAMING</p>
+                <h3>끊김 없이 이어지는 비행 구역</h3>
+                <p>해안, 섬, 산악 지형을 하나의 항로로 연결합니다.</p>
+              </div>
+            </article>
+
+            <article class="feature-card">
+              <img src="./assets/cockpit-approach.webp" alt="해안 활주로로 접근하는 가상 항공기 조종석 게임 화면">
+              <div class="feature-card-body">
+                <p class="card-meta">SYSTEM · AVIONICS</p>
+                <h3>읽고 조작하는 글라스 콕핏</h3>
+                <p>비행 계기와 접근 절차가 실제 조작 흐름에 맞춰 반응합니다.</p>
+              </div>
+            </article>
+
+            <article class="feature-card">
+              <img src="./assets/weather-flight.webp" alt="산악 지형의 구름 사이를 비행하는 가상 연구 항공기 화면">
+              <div class="feature-card-body">
+                <p class="card-meta">WEATHER · VOLUMETRICS</p>
+                <h3>항로를 바꾸는 살아있는 기상</h3>
+                <p>구름, 강수, 측풍이 시야와 기체 운동에 영향을 줍니다.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section devlog-section" id="devlog" aria-labelledby="devlog-title">
+        <div class="container">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">DEVELOPMENT LOG</p>
+              <h2 id="devlog-title">개발 기록</h2>
+            </div>
+            <button class="text-link text-button" type="button" data-toast="모든 개발 기록을 불러왔습니다.">
+              전체 보기 <i data-lucide="arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="devlog-grid">
+            <div class="devlog-list">
+              <a href="#devlog" class="devlog-row">
+                <span><b>0.8.4</b> 볼류메트릭 구름 렌더러 업데이트</span>
+                <time datetime="2026-07-28">2026.07.28</time>
+              </a>
+              <a href="#devlog" class="devlog-row">
+                <span><b>0.8.3</b> 지상 효과와 착륙 기어 감쇠 개선</span>
+                <time datetime="2026-07-18">2026.07.18</time>
+              </a>
+              <a href="#devlog" class="devlog-row">
+                <span><b>LAB</b> 조종석 디스플레이 렌더 타깃 테스트</span>
+                <time datetime="2026-07-09">2026.07.09</time>
+              </a>
+              <a href="#devlog" class="devlog-row">
+                <span><b>ROADMAP</b> 멀티플레이 편대 비행 계획</span>
+                <time datetime="2026-06-26">2026.06.26</time>
+              </a>
+            </div>
+
+            <aside class="build-panel" aria-label="현재 빌드">
+              <div class="build-panel-copy">
+                <span class="build-label">CURRENT BUILD</span>
+                <strong>0.8.4</strong>
+                <p>Windows · macOS · Linux</p>
+                <a href="#launcher">다운로드 <i data-lucide="arrow-down"></i></a>
+              </div>
+              <div class="build-gauge" aria-label="개발 진행률 78%">
+                <span>78%</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="systems-band" id="systems" aria-labelledby="systems-title">
+        <div class="container">
+          <div class="section-heading compact">
+            <div>
+              <p class="section-kicker">EXPLORE AEROFLOW</p>
+              <h2 id="systems-title">프로젝트 바로가기</h2>
+            </div>
+          </div>
+          <div class="quick-grid">
+            <a href="#project"><i data-lucide="plane"></i><span>게임</span></a>
+            <a href="#systems"><i data-lucide="wind"></i><span>비행 모델</span></a>
+            <a href="#systems"><i data-lucide="gauge"></i><span>항전 장비</span></a>
+            <a href="#media"><i data-lucide="image"></i><span>미디어</span></a>
+            <a href="#devlog"><i data-lucide="notebook-tabs"></i><span>개발 기록</span></a>
+            <button type="button" data-open-help><i data-lucide="gamepad-2"></i><span>조작</span></button>
+            <a href="#devlog"><i data-lucide="route"></i><span>로드맵</span></a>
+            <a href="#launcher"><i data-lucide="download"></i><span>다운로드</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="media-strip" id="media" aria-label="미디어">
+        <div class="media-copy">
+          <p class="section-kicker">FLIGHT TEST 042</p>
+          <h2>바람이 바뀌면<br>비행도 달라집니다.</h2>
+          <button class="button button-light" type="button" data-toast="비행 테스트 영상은 다음 빌드와 함께 공개됩니다.">
+            <i data-lucide="play"></i>
+            테스트 영상
+          </button>
+        </div>
+        <img src="./assets/weather-flight.webp" alt="구름과 산악 지형을 통과하는 비행 테스트 장면">
+      </section>
+    </main>
+
+    <footer class="site-footer" id="community">
+      <div class="container footer-grid">
+        <div>
+          <a class="brand footer-brand" href="#top">
+            <span class="brand-mark" aria-hidden="true"><i data-lucide="plane"></i></span>
+            <span>AEROFLOW</span>
+          </a>
+          <p>Independent aviation simulation project built with Godot.</p>
+        </div>
+        <div>
+          <strong>프로젝트</strong>
+          <a href="#project">개요</a>
+          <a href="#systems">비행 시스템</a>
+          <a href="#media">미디어</a>
+        </div>
+        <div>
+          <strong>개발</strong>
+          <a href="#devlog">개발 기록</a>
+          <a href="#devlog">로드맵</a>
+          <a href="#launcher">빌드</a>
+        </div>
+        <div>
+          <strong>지원</strong>
+          <button type="button" data-open-help>조작 안내</button>
+          <button type="button" data-open-help>문제 해결</button>
+          <a href="#community">커뮤니티</a>
+        </div>
+        <div>
+          <strong>라이선스</strong>
+          <a href="#community">프로젝트 정책</a>
+          <a href="#community">서드파티 고지</a>
+          <a href="https://godotengine.org/license/" rel="noreferrer">Godot 라이선스</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <span>© 2026 AEROFLOW PROJECT</span>
+        <div>
+          <a href="#community" aria-label="Git 저장소" title="Git 저장소"><i data-lucide="github"></i></a>
+          <a href="#media" aria-label="영상 채널" title="영상 채널"><i data-lucide="youtube"></i></a>
+          <a href="#community" aria-label="커뮤니티" title="커뮤니티"><i data-lucide="message-circle"></i></a>
+        </div>
+      </div>
+    </footer>
+
+    <div class="floating-actions">
+      <button class="floating-button help-button" type="button" aria-label="조작 도움말" title="조작 도움말" data-open-help>
+        <i data-lucide="life-buoy"></i>
+      </button>
+      <button class="floating-button top-button" type="button" aria-label="맨 위로" title="맨 위로">
+        <i data-lucide="arrow-up"></i>
+      </button>
+    </div>
+
+    <dialog class="project-dialog" id="project-dialog">
+      <button class="dialog-close icon-button" type="button" aria-label="창 닫기" title="닫기">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="dialog-icon"><i data-lucide="plane-takeoff"></i></div>
+      <p class="section-kicker">AEROFLOW BUILD</p>
+      <h2>비행 준비 완료</h2>
+      <p class="dialog-summary"></p>
+      <div class="dialog-actions">
+        <button class="button button-primary dialog-confirm" type="button">
+          <i data-lucide="download"></i>
+          다운로드 확인
+        </button>
+        <button class="button button-outline dialog-cancel" type="button">취소</button>
+      </div>
+    </dialog>
+
+    <dialog class="project-dialog help-dialog" id="help-dialog">
+      <button class="dialog-close icon-button" type="button" aria-label="창 닫기" title="닫기">
+        <i data-lucide="x"></i>
+      </button>
+      <div class="dialog-icon"><i data-lucide="gamepad-2"></i></div>
+      <p class="section-kicker">CONTROLS</p>
+      <h2>기본 조작</h2>
+      <dl class="control-list">
+        <div><dt>Pitch / Roll</dt><dd>WASD · Stick</dd></div>
+        <div><dt>Throttle</dt><dd>Shift / Ctrl</dd></div>
+        <div><dt>Landing gear</dt><dd>G</dd></div>
+        <div><dt>Camera</dt><dd>C · Right stick</dd></div>
+      </dl>
+    </dialog>
+
+    <div class="toast" role="status" aria-live="polite" hidden></div>
+  </body>
+</html>

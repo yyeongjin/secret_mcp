@@ -1,0 +1,1042 @@
+{
+  "schema": "secret-mcp/design-index-run/v1",
+  "runId": "2026-07-29T15-54-10-483Z-5c70317e",
+  "query": "Godot 프로젝트 사이트용 항공 레퍼런스",
+  "language": "ko",
+  "requestedLimit": 3,
+  "targetYear": 2026,
+  "allowedYears": [
+    2026,
+    2025
+  ],
+  "awardOnly": true,
+  "outputDirectory": "tmp/design-index/aviation-godot-20260730",
+  "runDirectory": "tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e",
+  "status": "completed",
+  "createdAt": "2026-07-29T15:54:10.483Z",
+  "updatedAt": "2026-07-29T16:06:05.530073Z",
+  "total": 3,
+  "generated": 3,
+  "failed": 0,
+  "isolation": {
+    "strategy": "one-result-per-sampling-request",
+    "includeContext": "none"
+  },
+  "exclusions": {
+    "activeAtStart": []
+  },
+  "items": [
+    {
+      "referenceId": "gdweb-27294",
+      "title": "대한항공",
+      "gdwebUrl": "https://www.gdweb.co.kr/sub/view.asp?Txt_fgbn=5&str_no=27294",
+      "registeredDate": "2026년 07월 15일",
+      "award": "WINNER PRIZE",
+      "concept": "깔끔한",
+      "primaryColor": "BLUE",
+      "productionCompany": "미등록",
+      "status": "generated",
+      "evidence": [
+        {
+          "sourceKind": "desktop",
+          "part": 1,
+          "totalParts": 2,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 104925,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=27294&sgbn=1",
+          "relativePath": "evidence/gdweb-27294_desktop_01-of-02.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 2675,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 1672,
+          "scaleX": 0.625,
+          "scaleY": 0.6250467289719626,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#FFFFFF",
+              "rgb": "rgb(255, 255, 255)",
+              "hsl": "hsl(0, 0%, 100%)",
+              "coverage": 0.5478
+            },
+            {
+              "hex": "#CCEEEE",
+              "rgb": "rgb(204, 238, 238)",
+              "hsl": "hsl(180, 50%, 87%)",
+              "coverage": 0.0814
+            },
+            {
+              "hex": "#DDEEFF",
+              "rgb": "rgb(221, 238, 255)",
+              "hsl": "hsl(210, 100%, 93%)",
+              "coverage": 0.0668
+            },
+            {
+              "hex": "#EEEEFF",
+              "rgb": "rgb(238, 238, 255)",
+              "hsl": "hsl(240, 100%, 97%)",
+              "coverage": 0.0308
+            },
+            {
+              "hex": "#EEFFFF",
+              "rgb": "rgb(238, 255, 255)",
+              "hsl": "hsl(180, 100%, 97%)",
+              "coverage": 0.0252
+            },
+            {
+              "hex": "#EEEEEE",
+              "rgb": "rgb(238, 238, 238)",
+              "hsl": "hsl(0, 0%, 93%)",
+              "coverage": 0.0216
+            },
+            {
+              "hex": "#99DDFF",
+              "rgb": "rgb(153, 221, 255)",
+              "hsl": "hsl(200, 100%, 80%)",
+              "coverage": 0.0155
+            },
+            {
+              "hex": "#CCDDEE",
+              "rgb": "rgb(204, 221, 238)",
+              "hsl": "hsl(210, 50%, 87%)",
+              "coverage": 0.0153
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 2,
+          "totalParts": 2,
+          "width": 1200,
+          "height": 152,
+          "byteLength": 10737,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=27294&sgbn=1",
+          "relativePath": "evidence/gdweb-27294_desktop_02-of-02.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 2675,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 1672,
+          "scaleX": 0.625,
+          "scaleY": 0.6250467289719626,
+          "cropLeft": 0,
+          "cropTop": 1520,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 2432,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 243,
+          "representativeColors": [
+            {
+              "hex": "#FFFFFF",
+              "rgb": "rgb(255, 255, 255)",
+              "hsl": "hsl(0, 0%, 100%)",
+              "coverage": 0.8589
+            },
+            {
+              "hex": "#EEEEEE",
+              "rgb": "rgb(238, 238, 238)",
+              "hsl": "hsl(0, 0%, 93%)",
+              "coverage": 0.0319
+            },
+            {
+              "hex": "#DDDDDD",
+              "rgb": "rgb(221, 221, 221)",
+              "hsl": "hsl(0, 0%, 87%)",
+              "coverage": 0.0089
+            },
+            {
+              "hex": "#BBBBCC",
+              "rgb": "rgb(187, 187, 204)",
+              "hsl": "hsl(240, 14%, 77%)",
+              "coverage": 0.0077
+            },
+            {
+              "hex": "#CCCCDD",
+              "rgb": "rgb(204, 204, 221)",
+              "hsl": "hsl(240, 20%, 83%)",
+              "coverage": 0.0056
+            },
+            {
+              "hex": "#CCCCCC",
+              "rgb": "rgb(204, 204, 204)",
+              "hsl": "hsl(0, 0%, 80%)",
+              "coverage": 0.0053
+            },
+            {
+              "hex": "#DDEEEE",
+              "rgb": "rgb(221, 238, 238)",
+              "hsl": "hsl(180, 33%, 90%)",
+              "coverage": 0.0053
+            },
+            {
+              "hex": "#555555",
+              "rgb": "rgb(85, 85, 85)",
+              "hsl": "hsl(0, 0%, 33%)",
+              "coverage": 0.0048
+            }
+          ]
+        },
+        {
+          "sourceKind": "mobile",
+          "part": 1,
+          "totalParts": 1,
+          "width": 243,
+          "height": 339,
+          "byteLength": 10952,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=27294&sgbn=3",
+          "relativePath": "evidence/gdweb-27294_mobile_01-of-01.jpg",
+          "sourceWidth": 243,
+          "sourceHeight": 339,
+          "preparedCanvasWidth": 243,
+          "preparedCanvasHeight": 339,
+          "scaleX": 1,
+          "scaleY": 1,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 243,
+          "sourceCropHeight": 339,
+          "representativeColors": [
+            {
+              "hex": "#FFFFFF",
+              "rgb": "rgb(255, 255, 255)",
+              "hsl": "hsl(0, 0%, 100%)",
+              "coverage": 0.5368
+            },
+            {
+              "hex": "#DDEEFF",
+              "rgb": "rgb(221, 238, 255)",
+              "hsl": "hsl(210, 100%, 93%)",
+              "coverage": 0.0561
+            },
+            {
+              "hex": "#CCEEEE",
+              "rgb": "rgb(204, 238, 238)",
+              "hsl": "hsl(180, 50%, 87%)",
+              "coverage": 0.0523
+            },
+            {
+              "hex": "#EEFFFF",
+              "rgb": "rgb(238, 255, 255)",
+              "hsl": "hsl(180, 100%, 97%)",
+              "coverage": 0.0367
+            },
+            {
+              "hex": "#EEEEFF",
+              "rgb": "rgb(238, 238, 255)",
+              "hsl": "hsl(240, 100%, 97%)",
+              "coverage": 0.0306
+            },
+            {
+              "hex": "#CCDDEE",
+              "rgb": "rgb(204, 221, 238)",
+              "hsl": "hsl(210, 50%, 87%)",
+              "coverage": 0.0273
+            },
+            {
+              "hex": "#EEEEEE",
+              "rgb": "rgb(238, 238, 238)",
+              "hsl": "hsl(0, 0%, 93%)",
+              "coverage": 0.0235
+            },
+            {
+              "hex": "#DDEEEE",
+              "rgb": "rgb(221, 238, 238)",
+              "hsl": "hsl(180, 33%, 90%)",
+              "coverage": 0.0221
+            }
+          ]
+        }
+      ],
+      "startedAt": "2026-07-29T15:54:10.488Z",
+      "contractPath": "contracts/gdweb-27294.md",
+      "model": "codex-isolated-agent",
+      "documentPath": "documents/DESIGN_INDEX_gdweb-27294.md",
+      "completedAt": "2026-07-29T16:02:44.950523Z"
+    },
+    {
+      "referenceId": "gdweb-25378",
+      "title": "파블로 항공",
+      "gdwebUrl": "https://www.gdweb.co.kr/sub/view.asp?Txt_fgbn=5&str_no=25378",
+      "registeredDate": "2025년 07월 30일",
+      "award": "WINNER PRIZE",
+      "concept": "깔끔한 , 신뢰적인",
+      "primaryColor": "BLACK , BLUE , WHITE",
+      "productionCompany": "거인소프트",
+      "status": "generated",
+      "evidence": [
+        {
+          "sourceKind": "desktop",
+          "part": 1,
+          "totalParts": 3,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 84318,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=25378&sgbn=1",
+          "relativePath": "evidence/gdweb-25378_desktop_01-of-03.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7043,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4402,
+          "scaleX": 0.625,
+          "scaleY": 0.6250177481186994,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#111111",
+              "rgb": "rgb(17, 17, 17)",
+              "hsl": "hsl(0, 0%, 7%)",
+              "coverage": 0.3106
+            },
+            {
+              "hex": "#112233",
+              "rgb": "rgb(17, 34, 51)",
+              "hsl": "hsl(210, 50%, 13%)",
+              "coverage": 0.1056
+            },
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.1037
+            },
+            {
+              "hex": "#112244",
+              "rgb": "rgb(17, 34, 68)",
+              "hsl": "hsl(220, 60%, 17%)",
+              "coverage": 0.0964
+            },
+            {
+              "hex": "#001122",
+              "rgb": "rgb(0, 17, 34)",
+              "hsl": "hsl(210, 100%, 7%)",
+              "coverage": 0.094
+            },
+            {
+              "hex": "#001133",
+              "rgb": "rgb(0, 17, 51)",
+              "hsl": "hsl(220, 100%, 10%)",
+              "coverage": 0.0599
+            },
+            {
+              "hex": "#111133",
+              "rgb": "rgb(17, 17, 51)",
+              "hsl": "hsl(240, 50%, 13%)",
+              "coverage": 0.0559
+            },
+            {
+              "hex": "#002244",
+              "rgb": "rgb(0, 34, 68)",
+              "hsl": "hsl(210, 100%, 13%)",
+              "coverage": 0.0247
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 2,
+          "totalParts": 3,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 90932,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=25378&sgbn=1",
+          "relativePath": "evidence/gdweb-25378_desktop_02-of-03.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7043,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4402,
+          "scaleX": 0.625,
+          "scaleY": 0.6250177481186994,
+          "cropLeft": 0,
+          "cropTop": 1520,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 2432,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#001122",
+              "rgb": "rgb(0, 17, 34)",
+              "hsl": "hsl(210, 100%, 7%)",
+              "coverage": 0.1823
+            },
+            {
+              "hex": "#001133",
+              "rgb": "rgb(0, 17, 51)",
+              "hsl": "hsl(220, 100%, 10%)",
+              "coverage": 0.1085
+            },
+            {
+              "hex": "#EEEEEE",
+              "rgb": "rgb(238, 238, 238)",
+              "hsl": "hsl(0, 0%, 93%)",
+              "coverage": 0.0888
+            },
+            {
+              "hex": "#001111",
+              "rgb": "rgb(0, 17, 17)",
+              "hsl": "hsl(180, 100%, 3%)",
+              "coverage": 0.0687
+            },
+            {
+              "hex": "#112233",
+              "rgb": "rgb(17, 34, 51)",
+              "hsl": "hsl(210, 50%, 13%)",
+              "coverage": 0.0574
+            },
+            {
+              "hex": "#223344",
+              "rgb": "rgb(34, 51, 68)",
+              "hsl": "hsl(210, 33%, 20%)",
+              "coverage": 0.0301
+            },
+            {
+              "hex": "#222233",
+              "rgb": "rgb(34, 34, 51)",
+              "hsl": "hsl(240, 20%, 17%)",
+              "coverage": 0.0271
+            },
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.0243
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 3,
+          "totalParts": 3,
+          "width": 1200,
+          "height": 1362,
+          "byteLength": 102872,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=25378&sgbn=1",
+          "relativePath": "evidence/gdweb-25378_desktop_03-of-03.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7043,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4402,
+          "scaleX": 0.625,
+          "scaleY": 0.6250177481186994,
+          "cropLeft": 0,
+          "cropTop": 3040,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 4864,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2179,
+          "representativeColors": [
+            {
+              "hex": "#001122",
+              "rgb": "rgb(0, 17, 34)",
+              "hsl": "hsl(210, 100%, 7%)",
+              "coverage": 0.3639
+            },
+            {
+              "hex": "#001133",
+              "rgb": "rgb(0, 17, 51)",
+              "hsl": "hsl(220, 100%, 10%)",
+              "coverage": 0.0978
+            },
+            {
+              "hex": "#112233",
+              "rgb": "rgb(17, 34, 51)",
+              "hsl": "hsl(210, 50%, 13%)",
+              "coverage": 0.069
+            },
+            {
+              "hex": "#111111",
+              "rgb": "rgb(17, 17, 17)",
+              "hsl": "hsl(0, 0%, 7%)",
+              "coverage": 0.0607
+            },
+            {
+              "hex": "#001111",
+              "rgb": "rgb(0, 17, 17)",
+              "hsl": "hsl(180, 100%, 3%)",
+              "coverage": 0.043
+            },
+            {
+              "hex": "#000022",
+              "rgb": "rgb(0, 0, 34)",
+              "hsl": "hsl(240, 100%, 7%)",
+              "coverage": 0.0247
+            },
+            {
+              "hex": "#223333",
+              "rgb": "rgb(34, 51, 51)",
+              "hsl": "hsl(180, 20%, 17%)",
+              "coverage": 0.0235
+            },
+            {
+              "hex": "#222222",
+              "rgb": "rgb(34, 34, 34)",
+              "hsl": "hsl(0, 0%, 13%)",
+              "coverage": 0.0233
+            }
+          ]
+        },
+        {
+          "sourceKind": "mobile",
+          "part": 1,
+          "totalParts": 1,
+          "width": 243,
+          "height": 891,
+          "byteLength": 24390,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=25378&sgbn=3",
+          "relativePath": "evidence/gdweb-25378_mobile_01-of-01.jpg",
+          "sourceWidth": 243,
+          "sourceHeight": 891,
+          "preparedCanvasWidth": 243,
+          "preparedCanvasHeight": 891,
+          "scaleX": 1,
+          "scaleY": 1,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 243,
+          "sourceCropHeight": 891,
+          "representativeColors": [
+            {
+              "hex": "#001122",
+              "rgb": "rgb(0, 17, 34)",
+              "hsl": "hsl(210, 100%, 7%)",
+              "coverage": 0.1925
+            },
+            {
+              "hex": "#111111",
+              "rgb": "rgb(17, 17, 17)",
+              "hsl": "hsl(0, 0%, 7%)",
+              "coverage": 0.1215
+            },
+            {
+              "hex": "#001133",
+              "rgb": "rgb(0, 17, 51)",
+              "hsl": "hsl(220, 100%, 10%)",
+              "coverage": 0.0833
+            },
+            {
+              "hex": "#112233",
+              "rgb": "rgb(17, 34, 51)",
+              "hsl": "hsl(210, 50%, 13%)",
+              "coverage": 0.074
+            },
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.0683
+            },
+            {
+              "hex": "#112244",
+              "rgb": "rgb(17, 34, 68)",
+              "hsl": "hsl(220, 60%, 17%)",
+              "coverage": 0.045
+            },
+            {
+              "hex": "#001111",
+              "rgb": "rgb(0, 17, 17)",
+              "hsl": "hsl(180, 100%, 3%)",
+              "coverage": 0.0408
+            },
+            {
+              "hex": "#111133",
+              "rgb": "rgb(17, 17, 51)",
+              "hsl": "hsl(240, 50%, 13%)",
+              "coverage": 0.03
+            }
+          ]
+        }
+      ],
+      "startedAt": "2026-07-29T15:54:11.032Z",
+      "contractPath": "contracts/gdweb-25378.md",
+      "model": "codex-isolated-agent",
+      "documentPath": "documents/DESIGN_INDEX_gdweb-25378.md",
+      "completedAt": "2026-07-29T16:06:05.529762Z"
+    },
+    {
+      "referenceId": "gdweb-24234",
+      "title": "파라타항공 브랜드 사이트",
+      "gdwebUrl": "https://www.gdweb.co.kr/sub/view.asp?Txt_fgbn=5&str_no=24234",
+      "registeredDate": "2025년 03월 04일",
+      "award": "WINNER PRIZE",
+      "concept": "역동적인 , 모던한 , 신뢰적인",
+      "primaryColor": "BLUE , WHITE",
+      "productionCompany": "리메인레이어",
+      "status": "generated",
+      "evidence": [
+        {
+          "sourceKind": "desktop",
+          "part": 1,
+          "totalParts": 4,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 114817,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=24234&sgbn=1",
+          "relativePath": "evidence/gdweb-24234_desktop_01-of-04.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7832,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4895,
+          "scaleX": 0.625,
+          "scaleY": 0.625,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.3007
+            },
+            {
+              "hex": "#7788AA",
+              "rgb": "rgb(119, 136, 170)",
+              "hsl": "hsl(220, 23%, 57%)",
+              "coverage": 0.0773
+            },
+            {
+              "hex": "#8899AA",
+              "rgb": "rgb(136, 153, 170)",
+              "hsl": "hsl(210, 17%, 60%)",
+              "coverage": 0.0446
+            },
+            {
+              "hex": "#8899BB",
+              "rgb": "rgb(136, 153, 187)",
+              "hsl": "hsl(220, 27%, 63%)",
+              "coverage": 0.0303
+            },
+            {
+              "hex": "#8888AA",
+              "rgb": "rgb(136, 136, 170)",
+              "hsl": "hsl(240, 17%, 60%)",
+              "coverage": 0.0233
+            },
+            {
+              "hex": "#3366AA",
+              "rgb": "rgb(51, 102, 170)",
+              "hsl": "hsl(214, 54%, 43%)",
+              "coverage": 0.0206
+            },
+            {
+              "hex": "#9999BB",
+              "rgb": "rgb(153, 153, 187)",
+              "hsl": "hsl(240, 20%, 67%)",
+              "coverage": 0.0189
+            },
+            {
+              "hex": "#9999AA",
+              "rgb": "rgb(153, 153, 170)",
+              "hsl": "hsl(240, 9%, 63%)",
+              "coverage": 0.0163
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 2,
+          "totalParts": 4,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 104755,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=24234&sgbn=1",
+          "relativePath": "evidence/gdweb-24234_desktop_02-of-04.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7832,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4895,
+          "scaleX": 0.625,
+          "scaleY": 0.625,
+          "cropLeft": 0,
+          "cropTop": 1520,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 2432,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#001155",
+              "rgb": "rgb(0, 17, 85)",
+              "hsl": "hsl(228, 100%, 17%)",
+              "coverage": 0.3434
+            },
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.1935
+            },
+            {
+              "hex": "#9999AA",
+              "rgb": "rgb(153, 153, 170)",
+              "hsl": "hsl(240, 9%, 63%)",
+              "coverage": 0.0176
+            },
+            {
+              "hex": "#998888",
+              "rgb": "rgb(153, 136, 136)",
+              "hsl": "hsl(0, 8%, 57%)",
+              "coverage": 0.0168
+            },
+            {
+              "hex": "#EEEEEE",
+              "rgb": "rgb(238, 238, 238)",
+              "hsl": "hsl(0, 0%, 93%)",
+              "coverage": 0.0165
+            },
+            {
+              "hex": "#777788",
+              "rgb": "rgb(119, 119, 136)",
+              "hsl": "hsl(240, 7%, 50%)",
+              "coverage": 0.0154
+            },
+            {
+              "hex": "#888888",
+              "rgb": "rgb(136, 136, 136)",
+              "hsl": "hsl(0, 0%, 53%)",
+              "coverage": 0.0135
+            },
+            {
+              "hex": "#888899",
+              "rgb": "rgb(136, 136, 153)",
+              "hsl": "hsl(240, 8%, 57%)",
+              "coverage": 0.0135
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 3,
+          "totalParts": 4,
+          "width": 1200,
+          "height": 1600,
+          "byteLength": 125909,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=24234&sgbn=1",
+          "relativePath": "evidence/gdweb-24234_desktop_03-of-04.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7832,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4895,
+          "scaleX": 0.625,
+          "scaleY": 0.625,
+          "cropLeft": 0,
+          "cropTop": 3040,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 4864,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 2560,
+          "representativeColors": [
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.4327
+            },
+            {
+              "hex": "#001155",
+              "rgb": "rgb(0, 17, 85)",
+              "hsl": "hsl(228, 100%, 17%)",
+              "coverage": 0.0448
+            },
+            {
+              "hex": "#FFFFFF",
+              "rgb": "rgb(255, 255, 255)",
+              "hsl": "hsl(0, 0%, 100%)",
+              "coverage": 0.0399
+            },
+            {
+              "hex": "#6699CC",
+              "rgb": "rgb(102, 153, 204)",
+              "hsl": "hsl(210, 50%, 60%)",
+              "coverage": 0.0326
+            },
+            {
+              "hex": "#222233",
+              "rgb": "rgb(34, 34, 51)",
+              "hsl": "hsl(240, 20%, 17%)",
+              "coverage": 0.025
+            },
+            {
+              "hex": "#AAAABB",
+              "rgb": "rgb(170, 170, 187)",
+              "hsl": "hsl(240, 11%, 70%)",
+              "coverage": 0.0153
+            },
+            {
+              "hex": "#BBBBBB",
+              "rgb": "rgb(187, 187, 187)",
+              "hsl": "hsl(0, 0%, 73%)",
+              "coverage": 0.0145
+            },
+            {
+              "hex": "#CCCCCC",
+              "rgb": "rgb(204, 204, 204)",
+              "hsl": "hsl(0, 0%, 80%)",
+              "coverage": 0.0131
+            }
+          ]
+        },
+        {
+          "sourceKind": "desktop",
+          "part": 4,
+          "totalParts": 4,
+          "width": 1200,
+          "height": 335,
+          "byteLength": 8490,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=24234&sgbn=1",
+          "relativePath": "evidence/gdweb-24234_desktop_04-of-04.jpg",
+          "sourceWidth": 1920,
+          "sourceHeight": 7832,
+          "preparedCanvasWidth": 1200,
+          "preparedCanvasHeight": 4895,
+          "scaleX": 0.625,
+          "scaleY": 0.625,
+          "cropLeft": 0,
+          "cropTop": 4560,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 7296,
+          "sourceCropWidth": 1920,
+          "sourceCropHeight": 536,
+          "representativeColors": [
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.9302
+            },
+            {
+              "hex": "#222233",
+              "rgb": "rgb(34, 34, 51)",
+              "hsl": "hsl(240, 20%, 17%)",
+              "coverage": 0.0368
+            },
+            {
+              "hex": "#444455",
+              "rgb": "rgb(68, 68, 85)",
+              "hsl": "hsl(240, 11%, 30%)",
+              "coverage": 0.0101
+            },
+            {
+              "hex": "#333344",
+              "rgb": "rgb(51, 51, 68)",
+              "hsl": "hsl(240, 14%, 23%)",
+              "coverage": 0.0099
+            },
+            {
+              "hex": "#555566",
+              "rgb": "rgb(85, 85, 102)",
+              "hsl": "hsl(240, 9%, 37%)",
+              "coverage": 0.0027
+            },
+            {
+              "hex": "#222222",
+              "rgb": "rgb(34, 34, 34)",
+              "hsl": "hsl(0, 0%, 13%)",
+              "coverage": 0.0018
+            },
+            {
+              "hex": "#221122",
+              "rgb": "rgb(34, 17, 34)",
+              "hsl": "hsl(300, 33%, 10%)",
+              "coverage": 0.0009
+            },
+            {
+              "hex": "#555555",
+              "rgb": "rgb(85, 85, 85)",
+              "hsl": "hsl(0, 0%, 33%)",
+              "coverage": 0.0008
+            }
+          ]
+        },
+        {
+          "sourceKind": "mobile",
+          "part": 1,
+          "totalParts": 1,
+          "width": 243,
+          "height": 991,
+          "byteLength": 33814,
+          "sourceUrl": "https://www.gdweb.co.kr/sub/filedata.asp?str_no=24234&sgbn=3",
+          "relativePath": "evidence/gdweb-24234_mobile_01-of-01.jpg",
+          "sourceWidth": 243,
+          "sourceHeight": 991,
+          "preparedCanvasWidth": 243,
+          "preparedCanvasHeight": 991,
+          "scaleX": 1,
+          "scaleY": 1,
+          "cropLeft": 0,
+          "cropTop": 0,
+          "sourceCropLeft": 0,
+          "sourceCropTop": 0,
+          "sourceCropWidth": 243,
+          "sourceCropHeight": 991,
+          "representativeColors": [
+            {
+              "hex": "#111122",
+              "rgb": "rgb(17, 17, 34)",
+              "hsl": "hsl(240, 33%, 10%)",
+              "coverage": 0.2896
+            },
+            {
+              "hex": "#001155",
+              "rgb": "rgb(0, 17, 85)",
+              "hsl": "hsl(228, 100%, 17%)",
+              "coverage": 0.1015
+            },
+            {
+              "hex": "#222233",
+              "rgb": "rgb(34, 34, 51)",
+              "hsl": "hsl(240, 20%, 17%)",
+              "coverage": 0.0379
+            },
+            {
+              "hex": "#7788AA",
+              "rgb": "rgb(119, 136, 170)",
+              "hsl": "hsl(220, 23%, 57%)",
+              "coverage": 0.0245
+            },
+            {
+              "hex": "#8899AA",
+              "rgb": "rgb(136, 153, 170)",
+              "hsl": "hsl(210, 17%, 60%)",
+              "coverage": 0.0206
+            },
+            {
+              "hex": "#8899BB",
+              "rgb": "rgb(136, 153, 187)",
+              "hsl": "hsl(220, 27%, 63%)",
+              "coverage": 0.0153
+            },
+            {
+              "hex": "#333344",
+              "rgb": "rgb(51, 51, 68)",
+              "hsl": "hsl(240, 14%, 23%)",
+              "coverage": 0.0146
+            },
+            {
+              "hex": "#221122",
+              "rgb": "rgb(34, 17, 34)",
+              "hsl": "hsl(300, 33%, 10%)",
+              "coverage": 0.0128
+            }
+          ]
+        }
+      ],
+      "startedAt": "2026-07-29T15:54:12.685Z",
+      "contractPath": "contracts/gdweb-24234.md",
+      "model": "codex-isolated-agent",
+      "documentPath": "documents/DESIGN_INDEX_gdweb-24234.md",
+      "completedAt": "2026-07-29T16:06:05.530069Z"
+    }
+  ],
+  "events": [
+    {
+      "at": "2026-07-29T15:54:10.483Z",
+      "code": "run.created"
+    },
+    {
+      "at": "2026-07-29T15:54:10.486Z",
+      "code": "search.completed",
+      "detail": "3"
+    },
+    {
+      "at": "2026-07-29T15:54:10.488Z",
+      "code": "item.evidence.loading",
+      "referenceId": "gdweb-27294"
+    },
+    {
+      "at": "2026-07-29T15:54:10.781Z",
+      "code": "item.evidence.preparing",
+      "referenceId": "gdweb-27294"
+    },
+    {
+      "at": "2026-07-29T15:54:11.031Z",
+      "code": "item.sampling.started",
+      "referenceId": "gdweb-27294",
+      "detail": "3"
+    },
+    {
+      "at": "2026-07-29T15:54:11.032Z",
+      "code": "item.evidence.loading",
+      "referenceId": "gdweb-25378"
+    },
+    {
+      "at": "2026-07-29T15:54:12.081Z",
+      "code": "item.evidence.preparing",
+      "referenceId": "gdweb-25378"
+    },
+    {
+      "at": "2026-07-29T15:54:12.685Z",
+      "code": "item.sampling.started",
+      "referenceId": "gdweb-25378",
+      "detail": "4"
+    },
+    {
+      "at": "2026-07-29T15:54:12.685Z",
+      "code": "item.evidence.loading",
+      "referenceId": "gdweb-24234"
+    },
+    {
+      "at": "2026-07-29T15:54:13.323Z",
+      "code": "item.evidence.preparing",
+      "referenceId": "gdweb-24234"
+    },
+    {
+      "at": "2026-07-29T15:54:14.033Z",
+      "code": "item.sampling.started",
+      "referenceId": "gdweb-24234",
+      "detail": "5"
+    },
+    {
+      "at": "2026-07-29T16:02:44.950523Z",
+      "code": "item.document.writing",
+      "referenceId": "gdweb-27294"
+    },
+    {
+      "at": "2026-07-29T16:02:44.950523Z",
+      "code": "item.generated",
+      "referenceId": "gdweb-27294"
+    },
+    {
+      "at": "2026-07-29T16:06:05.529762Z",
+      "code": "item.document.writing",
+      "referenceId": "gdweb-25378"
+    },
+    {
+      "at": "2026-07-29T16:06:05.529762Z",
+      "code": "item.generated",
+      "referenceId": "gdweb-25378"
+    },
+    {
+      "at": "2026-07-29T16:06:05.530069Z",
+      "code": "item.document.writing",
+      "referenceId": "gdweb-24234"
+    },
+    {
+      "at": "2026-07-29T16:06:05.530069Z",
+      "code": "item.generated",
+      "referenceId": "gdweb-24234"
+    },
+    {
+      "at": "2026-07-29T16:06:05.530073Z",
+      "code": "run.completed"
+    }
+  ],
+  "completedAt": "2026-07-29T16:06:05.530073Z"
+}

@@ -1,0 +1,92 @@
+name: GDWEB Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: Design search query
+        required: false
+        default: 금융
+      year:
+        description: Target year. Leave empty to use current year.
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Search GDWEB Designs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run GDWEB smoke search
+        env:
+          QUERY: ${{ inputs.query }}
+          YEAR: ${{ inputs.year }}
+        run: |
+          node -e "
+            const { GdwebDesignSearch } = await import('./dist/gdweb-design-search.js');
+            const gdweb = new GdwebDesignSearch();
+            const year = process.env.YEAR ? Number(process.env.YEAR) : undefined;
+            const results = await gdweb.search({
+              query: process.env.QUERY || '금융',
+              limit: 5,
+              year,
+              awardOnly: true,
+              includePreviousYear: true
+            });
+            console.log(JSON.stringify(results.map((result) => ({
+              referenceId: 'gdweb-' + result.strNo,
+              title: result.title,
+              gdwebUrl: result.gdwebUrl,
+              registeredDate: result.registeredDate,
+              award: result.award,
+              concept: result.concept,
+              primaryColor: result.primaryColor,
+              desktopImageUrl: result.desktopImageUrl,
+              mobileImageUrl: result.mobileImageUrl
+            })), null, 2));
+            if (results.length === 0) {
+              throw new Error('No GDWEB smoke results found');
+            }
+            const reference = await gdweb.getDesignReference(results[0].gdwebUrl);
+            const images = reference.images.map((image) => ({
+              kind: image.kind,
+              mimeType: image.mimeType,
+              width: image.width,
+              height: image.height,
+              byteLength: image.byteLength
+            }));
+            console.log(JSON.stringify({
+              referenceId: 'gdweb-' + reference.design.strNo,
+              images
+            }, null, 2));
+            if (!reference.images.some((image) => image.kind === 'desktop')) {
+              throw new Error('GDWEB desktop evidence image is unavailable');
+            }
+          "
+
+      - name: Verify isolated LLM request per GDWEB result
+        env:
+          QUERY: ${{ inputs.query }}
+          YEAR: ${{ inputs.year }}
+          LIMIT: 2
+        run: npm run smoke:gdweb-isolation

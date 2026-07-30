@@ -1,0 +1,72 @@
+{
+  "name": "secret-mcp",
+  "version": "0.6.0",
+  "description": "Local MCP server and web viewer for isolated per-result GDWEB design specifications",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "web",
+    "docs",
+    "README.md",
+    "LICENSE",
+    "mcp.json"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "bin": {
+    "secret-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc && echo '✅ TypeScript compilation complete: dist/index.js'",
+    "dev": "tsx watch src/index.ts",
+    "start": "node ./dist/index.js",
+    "web": "node ./dist/dashboard-server.js",
+    "web:dev": "tsx watch src/dashboard-server.ts",
+    "lint": "eslint \"src/**/*.ts\"",
+    "smoke:gdweb-isolation": "node scripts/gdweb-isolated-smoke.mjs",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "mcp",
+    "web-search",
+    "web-design",
+    "gdweb",
+    "ai",
+    "llm"
+  ],
+  "author": "yyeongjin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yyeongjin/secret_mcp.git"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "axios": "^1.19.0",
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^5.2.1",
+    "lucide": "^0.468.0",
+    "marked": "^15.0.12",
+    "p-limit": "^6.2.0",
+    "p-retry": "^6.2.1",
+    "playwright": "^1.62.0",
+    "sanitize-html": "^2.13.1",
+    "sharp": "^0.35.3",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.10",
+    "@types/sanitize-html": "^2.16.1",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
+    "esbuild": "^0.25.5",
+    "eslint": "^10.8.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.5"
+  }
+}
