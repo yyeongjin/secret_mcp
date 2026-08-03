@@ -17,6 +17,15 @@ import { resolveDesignIndexOutputDirectory } from './design-index-paths.js';
 import { WebSearchToolInput, WebSearchToolOutput, SearchResult } from './types.js';
 import { isPdfUrl } from './utils.js';
 
+const configuredSamplingTimeoutMs = Number(
+  process.env.MCP_SAMPLING_TIMEOUT_MS
+);
+const samplingTimeoutMs =
+  Number.isFinite(configuredSamplingTimeoutMs) &&
+  configuredSamplingTimeoutMs > 0
+    ? configuredSamplingTimeoutMs
+    : 180_000;
+
 interface ToolRegistrar {
   registerTool(
     name: string,
@@ -676,27 +685,30 @@ class SecretMCPServer {
     console.error(
       `[MCP] Starting isolated sampling request for gdweb-${reference.design.strNo}`
     );
-    const response = await this.server.server.createMessage({
-      systemPrompt: [
-        'You are a senior frontend measurement and specification author.',
-        'Analyze only the single GDWEB reference provided in this sampling request.',
-        'Produce a page-by-page, measurement-first reconstruction DESIGN_INDEX, not a multi-reference summary.',
-        'Navigation geometry, section bounds, exact color formats, responsive values, evidence coordinates, confidence, and visual QA tolerances are mandatory.',
-      ].join(' '),
-      messages,
-      includeContext: 'none',
-      maxTokens,
-      temperature: 0.2,
-      modelPreferences: {
-        intelligencePriority: 1,
-        speedPriority: 0.2,
-        costPriority: 0.2,
+    const response = await this.server.server.createMessage(
+      {
+        systemPrompt: [
+          'You are a senior frontend measurement and specification author.',
+          'Analyze only the single GDWEB reference provided in this sampling request.',
+          'Produce a page-by-page, measurement-first reconstruction DESIGN_INDEX, not a multi-reference summary.',
+          'Navigation geometry, section bounds, exact color formats, responsive values, evidence coordinates, confidence, and visual QA tolerances are mandatory.',
+        ].join(' '),
+        messages,
+        includeContext: 'none',
+        maxTokens,
+        temperature: 0.2,
+        modelPreferences: {
+          intelligencePriority: 1,
+          speedPriority: 0.2,
+          costPriority: 0.2,
+        },
+        metadata: {
+          task: 'gdweb-design-index',
+          referenceId: `gdweb-${reference.design.strNo}`,
+        },
       },
-      metadata: {
-        task: 'gdweb-design-index',
-        referenceId: `gdweb-${reference.design.strNo}`,
-      },
-    });
+      { timeout: samplingTimeoutMs }
+    );
 
     if (response.content.type !== 'text') {
       throw new Error(
