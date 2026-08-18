@@ -62,7 +62,7 @@ export class DesignExclusionStore {
       strNo,
       title: input.title.trim() || input.referenceId,
       gdwebUrl: input.gdwebUrl.trim(),
-      reason: input.reason?.trim() || '웹 뷰어에서 수동 제외',
+      reason: input.reason?.trim() || 'Manually excluded in the web viewer',
       createdAt: existing?.createdAt ?? new Date().toISOString(),
       sourceRunId: input.sourceRunId?.trim() || existing?.sourceRunId,
     };

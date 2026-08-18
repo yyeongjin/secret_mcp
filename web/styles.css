@@ -135,6 +135,40 @@ button {
   gap: 12px;
 }
 
+.language-switch {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid #34423d;
+  border-radius: 6px;
+  background: #1c2522;
+}
+
+.language-option {
+  min-width: 38px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #9dada7;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.language-option:hover,
+.language-option:focus-visible {
+  color: #f7faf8;
+  outline: none;
+}
+
+.language-option.is-active {
+  background: #e5f2ef;
+  color: #115e55;
+}
+
 .connection {
   gap: 7px;
   color: #bdc9c4;
@@ -1241,7 +1275,17 @@ button {
 
 @media (max-width: 560px) {
   .topbar {
-    padding: 0 12px;
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .language-option {
+    min-width: 31px;
+    padding: 0 5px;
   }
 
   .brand p,

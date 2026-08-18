@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,26 +19,34 @@
         </div>
       </div>
       <div class="topbar-actions">
+        <div class="language-switch" role="group" aria-label="Interface language" data-i18n-aria-label="interfaceLanguage">
+          <button class="language-option is-active" type="button" data-language="en" aria-pressed="true">EN</button>
+          <button class="language-option" type="button" data-language="ko" aria-pressed="false">한국어</button>
+        </div>
         <button
           class="icon-button exclusion-button"
           id="exclusionsButton"
           type="button"
-          title="검색 제외 목록"
-          aria-label="검색 제외 목록"
+          title="Search exclusion list"
+          aria-label="Search exclusion list"
+          data-i18n-title="exclusionList"
+          data-i18n-aria-label="exclusionList"
         >
           <i data-lucide="list-x"></i>
           <span class="exclusion-count" id="exclusionCount">0</span>
         </button>
         <div class="connection" id="connectionState" aria-live="polite">
           <span class="connection-dot"></span>
-          <span>연결 확인 중</span>
+          <span data-i18n="checkingConnection">Checking connection</span>
         </div>
         <button
           class="icon-button"
           id="refreshButton"
           type="button"
-          title="새로고침"
-          aria-label="새로고침"
+          title="Refresh"
+          aria-label="Refresh"
+          data-i18n-title="refresh"
+          data-i18n-aria-label="refresh"
         >
           <i data-lucide="refresh-cw"></i>
         </button>
@@ -46,11 +54,11 @@
     </header>
 
     <div class="workspace">
-      <aside class="runs-pane" aria-label="생성 작업">
+      <aside class="runs-pane" aria-label="Generation runs" data-i18n-aria-label="generationRuns">
         <div class="pane-heading">
           <div>
             <span class="eyebrow">RUNS</span>
-            <h2>생성 작업</h2>
+            <h2 data-i18n="generationRuns">Generation runs</h2>
           </div>
           <span class="count" id="runCount">0</span>
         </div>
@@ -58,29 +66,29 @@
         <div class="watch-path" id="watchPath"></div>
       </aside>
 
-      <section class="references-pane" aria-label="작품별 문서">
+      <section class="references-pane" aria-label="Per-work documents" data-i18n-aria-label="perWorkDocuments">
         <div class="run-overview" id="runOverview"></div>
         <div class="reference-list" id="referenceList"></div>
       </section>
 
       <main class="viewer-pane">
         <div class="viewer-header" id="viewerHeader"></div>
-        <nav class="viewer-tabs" id="viewerTabs" aria-label="작품 정보 보기">
+        <nav class="viewer-tabs" id="viewerTabs" aria-label="Work information" data-i18n-aria-label="workInformation">
           <button type="button" data-tab="document" class="tab is-active">
             <i data-lucide="file-text"></i>
-            <span>명세서</span>
+            <span data-i18n="specification">Specification</span>
           </button>
           <button type="button" data-tab="evidence" class="tab">
             <i data-lucide="images"></i>
-            <span>근거 이미지</span>
+            <span data-i18n="evidence">Evidence</span>
           </button>
           <button type="button" data-tab="contract" class="tab">
             <i data-lucide="scroll-text"></i>
-            <span>요청 계약</span>
+            <span data-i18n="requestContract">Request contract</span>
           </button>
           <button type="button" data-tab="events" class="tab">
             <i data-lucide="activity"></i>
-            <span>생성 기록</span>
+            <span data-i18n="generationLog">Generation log</span>
           </button>
         </nav>
         <div class="viewer-content" id="viewerContent"></div>
@@ -95,8 +103,10 @@
             class="icon-button"
             id="zoomOutButton"
             type="button"
-            title="축소"
-            aria-label="축소"
+            title="Zoom out"
+            aria-label="Zoom out"
+            data-i18n-title="zoomOut"
+            data-i18n-aria-label="zoomOut"
           >
             <i data-lucide="zoom-out"></i>
           </button>
@@ -105,8 +115,10 @@
             class="icon-button"
             id="zoomInButton"
             type="button"
-            title="확대"
-            aria-label="확대"
+            title="Zoom in"
+            aria-label="Zoom in"
+            data-i18n-title="zoomIn"
+            data-i18n-aria-label="zoomIn"
           >
             <i data-lucide="zoom-in"></i>
           </button>
@@ -114,8 +126,10 @@
             class="icon-button"
             id="closeDialogButton"
             type="button"
-            title="닫기"
-            aria-label="닫기"
+            title="Close"
+            aria-label="Close"
+            data-i18n-title="close"
+            data-i18n-aria-label="close"
           >
             <i data-lucide="x"></i>
           </button>
@@ -130,14 +144,16 @@
       <div class="exclusions-dialog-header">
         <div>
           <span class="eyebrow">FILTER</span>
-          <h2>검색 제외 목록</h2>
+          <h2 data-i18n="exclusionList">Search exclusion list</h2>
         </div>
         <button
           class="icon-button"
           id="closeExclusionsButton"
           type="button"
-          title="닫기"
-          aria-label="닫기"
+          title="Close"
+          aria-label="Close"
+          data-i18n-title="close"
+          data-i18n-aria-label="close"
         >
           <i data-lucide="x"></i>
         </button>
