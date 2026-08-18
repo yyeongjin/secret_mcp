@@ -199,6 +199,9 @@ try {
     throw new Error('Tool result did not return a run manifest path');
   }
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  if (manifest.language !== 'English') {
+    throw new Error(`Expected the default document language to be English, got ${manifest.language}`);
+  }
   const files = (await readdir(path.join(manifest.runDirectory, 'documents'))).sort();
   if (files.length !== expectedCount) {
     throw new Error(`Expected ${expectedCount} files, got ${files.length}`);

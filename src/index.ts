@@ -341,7 +341,7 @@ class SecretMCPServer {
             }
             return Boolean(val);
           }).default(true).describe('Whether to include the previous year'),
-          language: z.string().min(1).default('Korean').describe('Language for every generated document'),
+          language: z.enum(['English', 'Korean']).default('English').describe('Language for every generated document. Defaults to English; choose Korean for Korean output.'),
           outputDirectory: z.string().min(1).optional().describe('Directory for generated DESIGN_INDEX files. Defaults to DESIGN_INDEX_OUTPUT_DIR or ./design-index.'),
           maxTokens: z.union([z.number(), z.string()]).transform((val) => {
             const num = typeof val === 'string' ? parseInt(val, 10) : val;
@@ -385,7 +385,7 @@ class SecretMCPServer {
               }
               return Boolean(val);
             }).default(true),
-            language: z.string().min(1).default('Korean'),
+            language: z.enum(['English', 'Korean']).default('English'),
             outputDirectory: z.string().min(1).optional(),
             maxTokens: z.union([z.number(), z.string()]).transform((val) => {
               const num = typeof val === 'string' ? parseInt(val, 10) : val;

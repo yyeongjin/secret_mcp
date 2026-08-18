@@ -9,6 +9,7 @@ const state = {
   requestVersion: 0,
   renderedViewKey: null,
   zoom: 1,
+  locale: resolveInitialLocale(),
 };
 
 const elements = {
@@ -36,36 +37,202 @@ const elements = {
   exclusionList: document.querySelector('#exclusionList'),
   exclusionsPath: document.querySelector('#exclusionsPath'),
   toast: document.querySelector('#toast'),
+  languageButtons: document.querySelectorAll('[data-language]'),
 };
 
-const statusLabels = {
-  searching: 'GDWEB 검색 중',
-  processing: '작품별 생성 중',
-  completed: '생성 완료',
-  completed_with_errors: '일부 실패',
-  failed: '실패',
-  queued: '대기 중',
-  loading_evidence: '근거 불러오는 중',
-  preparing_images: '이미지 준비 중',
-  sampling: '독립 LLM 작성 중',
-  writing: '파일 저장 중',
-  generated: '문서 생성 완료',
+const translations = {
+  en: {
+    interfaceLanguage: 'Interface language',
+    exclusionList: 'Search exclusion list',
+    checkingConnection: 'Checking connection',
+    refresh: 'Refresh',
+    generationRuns: 'Generation runs',
+    perWorkDocuments: 'Per-work documents',
+    workInformation: 'Work information',
+    specification: 'Specification',
+    evidence: 'Evidence',
+    requestContract: 'Request contract',
+    generationLog: 'Generation log',
+    zoomOut: 'Zoom out',
+    zoomIn: 'Zoom in',
+    close: 'Close',
+    noRuns: 'No generation runs yet',
+    noRunsDescription: 'MCP runs will appear here after they start.',
+    isolatedRequests: 'Independent request per work',
+    exclusionsApplied: '{count} exclusion(s) applied when the search started',
+    works: 'Works',
+    generated: 'Generated',
+    failed: 'Failed',
+    progress: 'Progress {progress}%',
+    waitingForResults: 'Waiting for search results',
+    selectRun: 'Select a run',
+    resultsDescription: 'Per-work documents appear after the GDWEB search completes.',
+    excluded: 'Excluded',
+    imageCount: '{count} image(s)',
+    unknownRegistrationDate: 'Registration date unknown',
+    unknownProductionCompany: 'Production company unknown',
+    includeNextSearch: 'Include in the next search',
+    excludeNextSearch: 'Exclude from the next search',
+    removeExclusion: 'Remove exclusion',
+    excludeFromSearch: 'Exclude from search',
+    loadingDocument: 'Loading document',
+    copyMarkdown: 'Copy Markdown',
+    markdownCopied: 'Markdown copied.',
+    enlargeEvidence: 'Enlarge {label} image {part}/{total}',
+    originalGdwebImage: 'Original GDWEB image',
+    worksFound: '{count} work(s) found.',
+    isolatedImageRequest: 'Independent request with {count} evidence image(s).',
+    exclusionsWereApplied: 'Exclusions were applied.',
+    workFailed: 'Failed to process the work.',
+    processing: 'Processing',
+    selectDocument: 'Select a per-work document',
+    separateDocuments: 'Every work has its own DESIGN_INDEX document.',
+    loadFailed: 'Unable to load',
+    manualExclusionReason: 'Manually excluded in the web viewer',
+    includedToast: '{referenceId} will be included in the next search.',
+    excludedToast: '{referenceId} will be excluded from the next search.',
+    noExclusions: 'No works are excluded',
+    exclusionRemoved: 'Search exclusion removed.',
+    online: 'Live connection',
+    offline: 'Disconnected',
+    requestCount: '{count} request(s)',
+    status: {
+      searching: 'Searching GDWEB',
+      processing: 'Generating per work',
+      completed: 'Generation complete',
+      completed_with_errors: 'Completed with errors',
+      failed: 'Failed',
+      queued: 'Queued',
+      loading_evidence: 'Loading evidence',
+      preparing_images: 'Preparing images',
+      sampling: 'Independent LLM writing',
+      writing: 'Saving file',
+      generated: 'Document generated',
+    },
+    event: {
+      'run.created': 'Run created',
+      'search.exclusions.applied': 'Search exclusions applied',
+      'search.completed': 'GDWEB search complete',
+      'item.evidence.loading': 'Loading work evidence',
+      'item.evidence.preparing': 'Splitting and compressing image evidence',
+      'item.sampling.started': 'Independent LLM request started',
+      'item.document.writing': 'Saving document file',
+      'item.generated': 'Per-work DESIGN_INDEX generated',
+      'item.failed': 'Work processing failed',
+      'run.completed': 'Full run complete',
+      'run.failed': 'Run failed',
+    },
+  },
+  ko: {
+    interfaceLanguage: '인터페이스 언어',
+    exclusionList: '검색 제외 목록',
+    checkingConnection: '연결 확인 중',
+    refresh: '새로고침',
+    generationRuns: '생성 작업',
+    perWorkDocuments: '작품별 문서',
+    workInformation: '작품 정보 보기',
+    specification: '명세서',
+    evidence: '근거 이미지',
+    requestContract: '요청 계약',
+    generationLog: '생성 기록',
+    zoomOut: '축소',
+    zoomIn: '확대',
+    close: '닫기',
+    noRuns: '생성 기록이 없습니다',
+    noRunsDescription: 'MCP 작업이 시작되면 여기에 표시됩니다.',
+    isolatedRequests: '작품별 독립 요청',
+    exclusionsApplied: '검색 시작 시 제외 필터 {count}개 적용',
+    works: '작품',
+    generated: '생성',
+    failed: '실패',
+    progress: '진행률 {progress}%',
+    waitingForResults: '검색 결과를 기다리는 중입니다',
+    selectRun: '작업을 선택하세요',
+    resultsDescription: 'GDWEB 검색이 완료되면 작품별 문서가 나타납니다.',
+    excluded: '검색 제외',
+    imageCount: '{count}장',
+    unknownRegistrationDate: '등록일 미상',
+    unknownProductionCompany: '제작사 미상',
+    includeNextSearch: '다음 검색에 다시 포함',
+    excludeNextSearch: '다음 검색에서 제외',
+    removeExclusion: '제외 해제',
+    excludeFromSearch: '검색 제외',
+    loadingDocument: '문서를 불러오는 중입니다',
+    copyMarkdown: 'Markdown 복사',
+    markdownCopied: 'Markdown을 복사했습니다.',
+    enlargeEvidence: '{label} 이미지 {part}/{total} 확대',
+    originalGdwebImage: 'GDWEB 원본 이미지',
+    worksFound: '{count}개 작품을 찾았습니다.',
+    isolatedImageRequest: '{count}개 이미지 근거를 포함한 독립 요청입니다.',
+    exclusionsWereApplied: '제외 항목이 적용되었습니다.',
+    workFailed: '작품 처리에 실패했습니다.',
+    processing: '처리 중입니다',
+    selectDocument: '작품별 문서를 선택하세요',
+    separateDocuments: '각 작품의 DESIGN_INDEX는 별도 문서로 표시됩니다.',
+    loadFailed: '불러오지 못했습니다',
+    manualExclusionReason: '웹 뷰어에서 수동 제외',
+    includedToast: '{referenceId}를 다음 검색에 다시 포함합니다.',
+    excludedToast: '{referenceId}를 다음 검색에서 제외합니다.',
+    noExclusions: '제외한 작품이 없습니다',
+    exclusionRemoved: '검색 제외를 해제했습니다.',
+    online: '실시간 연결',
+    offline: '연결 끊김',
+    requestCount: '{count}개 요청',
+    status: {
+      searching: 'GDWEB 검색 중',
+      processing: '작품별 생성 중',
+      completed: '생성 완료',
+      completed_with_errors: '일부 실패',
+      failed: '실패',
+      queued: '대기 중',
+      loading_evidence: '근거 불러오는 중',
+      preparing_images: '이미지 준비 중',
+      sampling: '독립 LLM 작성 중',
+      writing: '파일 저장 중',
+      generated: '문서 생성 완료',
+    },
+    event: {
+      'run.created': '작업 생성',
+      'search.exclusions.applied': '검색 제외 목록 적용',
+      'search.completed': 'GDWEB 검색 완료',
+      'item.evidence.loading': '작품 근거 불러오기',
+      'item.evidence.preparing': '이미지 근거 분할 및 압축',
+      'item.sampling.started': '독립 LLM 요청 시작',
+      'item.document.writing': '문서 파일 저장',
+      'item.generated': '작품별 DESIGN_INDEX 생성 완료',
+      'item.failed': '작품 처리 실패',
+      'run.completed': '전체 작업 완료',
+      'run.failed': '작업 실패',
+    },
+  },
 };
 
-const eventLabels = {
-  'run.created': '작업 생성',
-  'search.exclusions.applied': '검색 제외 목록 적용',
-  'search.completed': 'GDWEB 검색 완료',
-  'item.evidence.loading': '작품 근거 불러오기',
-  'item.evidence.preparing': '이미지 근거 분할 및 압축',
-  'item.sampling.started': '독립 LLM 요청 시작',
-  'item.document.writing': '문서 파일 저장',
-  'item.generated': '작품별 DESIGN_INDEX 생성 완료',
-  'item.failed': '작품 처리 실패',
-  'run.completed': '전체 작업 완료',
-  'run.failed': '작업 실패',
-};
+function resolveInitialLocale() {
+  const queryLocale = new URLSearchParams(window.location.search).get('lang');
+  if (queryLocale === 'ko' || queryLocale === 'en') return queryLocale;
+  return window.localStorage.getItem('secret-mcp-locale') === 'ko' ? 'ko' : 'en';
+}
 
+function lookupTranslation(key) {
+  return key.split('.').reduce((value, part) => value?.[part], translations[state.locale]);
+}
+
+function t(key, values = {}) {
+  const template = lookupTranslation(key) ?? translations.en[key] ?? key;
+  return String(template).replace(/\{(\w+)\}/g, (_, name) => String(values[name] ?? `{${name}}`));
+}
+
+function statusLabel(status) {
+  return lookupTranslation(`status.${status}`) || status;
+}
+
+function eventLabel(code) {
+  return lookupTranslation(`event.${code}`) || code;
+}
+
+elements.languageButtons.forEach(button => {
+  button.addEventListener('click', () => setLocale(button.dataset.language));
+});
 elements.refreshButton.addEventListener('click', () => refresh(true));
 elements.exclusionsButton.addEventListener('click', () => {
   renderExclusionDialog();
@@ -106,10 +273,46 @@ document.addEventListener('visibilitychange', () => {
 await initialize();
 
 async function initialize() {
+  applyStaticTranslations();
   renderGlobalEmpty();
   refreshIcons();
   await refresh(false);
   state.refreshTimer = window.setInterval(() => refresh(false), 2500);
+}
+
+function setLocale(locale) {
+  if (locale !== 'en' && locale !== 'ko') return;
+  state.locale = locale;
+  state.renderedViewKey = null;
+  window.localStorage.setItem('secret-mcp-locale', locale);
+  const url = new URL(window.location.href);
+  if (locale === 'ko') {
+    url.searchParams.set('lang', 'ko');
+  } else {
+    url.searchParams.delete('lang');
+  }
+  window.history.replaceState({}, '', url);
+  applyStaticTranslations();
+  renderAll();
+  if (state.health) setConnection(true);
+}
+
+function applyStaticTranslations() {
+  document.documentElement.lang = state.locale;
+  document.querySelectorAll('[data-i18n]').forEach(node => {
+    node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(node => {
+    node.title = t(node.dataset.i18nTitle);
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(node => {
+    node.setAttribute('aria-label', t(node.dataset.i18nAriaLabel));
+  });
+  elements.languageButtons.forEach(button => {
+    const active = button.dataset.language === state.locale;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
 }
 
 async function refresh(userInitiated) {
@@ -185,8 +388,8 @@ function renderRunList() {
   if (state.runs.length === 0) {
     elements.runList.innerHTML = emptyMarkup(
       'inbox',
-      '생성 기록이 없습니다',
-      'MCP 작업이 시작되면 여기에 표시됩니다.'
+      t('noRuns'),
+      t('noRunsDescription')
     );
     return;
   }
@@ -230,14 +433,14 @@ function renderRunOverview() {
     <span class="eyebrow">${escapeHtml(run.runId.slice(-8).toUpperCase())}</span>
     <h2>${escapeHtml(run.query)}</h2>
     <p>${escapeHtml(formatDateTime(run.createdAt))} · ${escapeHtml(formatRunRange(run))}</p>
-    <p>작품별 독립 요청 · includeContext: ${escapeHtml(run.isolation?.includeContext || 'none')}</p>
-    <p>검색 시작 시 제외 필터 ${exclusionCount}개 적용</p>
+    <p>${escapeHtml(t('isolatedRequests'))} · includeContext: ${escapeHtml(run.isolation?.includeContext || 'none')}</p>
+    <p>${escapeHtml(t('exclusionsApplied', { count: exclusionCount }))}</p>
     <div class="summary-grid">
-      ${summaryCell(run.total, '작품')}
-      ${summaryCell(run.generated, '생성')}
-      ${summaryCell(run.failed, '실패')}
+      ${summaryCell(run.total, t('works'))}
+      ${summaryCell(run.generated, t('generated'))}
+      ${summaryCell(run.failed, t('failed'))}
     </div>
-    <div class="progress-track" aria-label="진행률 ${progress}%">
+    <div class="progress-track" aria-label="${escapeAttribute(t('progress', { progress }))}">
       <div class="progress-bar" style="width:${progress}%"></div>
     </div>
   `;
@@ -248,8 +451,8 @@ function renderReferenceList() {
   if (!run || run.items.length === 0) {
     elements.referenceList.innerHTML = emptyMarkup(
       'search',
-      run ? '검색 결과를 기다리는 중입니다' : '작업을 선택하세요',
-      run ? 'GDWEB 검색이 완료되면 작품별 문서가 나타납니다.' : ''
+      run ? t('waitingForResults') : t('selectRun'),
+      run ? t('resultsDescription') : ''
     );
     return;
   }
@@ -266,8 +469,8 @@ function renderReferenceList() {
         <div class="item-meta">
           ${statusMarkup(item.status)}
           <span class="reference-side-meta">
-            ${excluded ? '<span class="excluded-label">검색 제외</span>' : ''}
-            <span class="run-time">${item.evidence.length}장</span>
+            ${excluded ? `<span class="excluded-label">${escapeHtml(t('excluded'))}</span>` : ''}
+            <span class="run-time">${escapeHtml(t('imageCount', { count: item.evidence.length }))}</span>
           </span>
         </div>
       </button>
@@ -301,17 +504,17 @@ function renderViewerHeader() {
       <div>
         <span class="eyebrow">${escapeHtml(item.referenceId.toUpperCase())}</span>
         <h2>${escapeHtml(item.title)}</h2>
-        <p>${escapeHtml(item.registeredDate || '등록일 미상')} · ${escapeHtml(item.productionCompany || '제작사 미상')} · ${escapeHtml(item.model || statusLabels[item.status] || item.status)}</p>
+        <p>${escapeHtml(item.registeredDate || t('unknownRegistrationDate'))} · ${escapeHtml(item.productionCompany || t('unknownProductionCompany'))} · ${escapeHtml(item.model || statusLabel(item.status))}</p>
       </div>
       <div class="viewer-actions">
         <button
           class="command-button exclusion-toggle${excluded ? ' is-active' : ''}"
           type="button"
           data-exclusion-toggle
-          title="${excluded ? '다음 검색에 다시 포함' : '다음 검색에서 제외'}"
+          title="${escapeAttribute(excluded ? t('includeNextSearch') : t('excludeNextSearch'))}"
         >
           <i data-lucide="${excluded ? 'rotate-ccw' : 'list-x'}"></i>
-          <span>${excluded ? '제외 해제' : '검색 제외'}</span>
+          <span>${escapeHtml(excluded ? t('removeExclusion') : t('excludeFromSearch'))}</span>
         </button>
         <a class="external-link" href="${escapeAttribute(item.gdwebUrl)}" target="_blank" rel="noreferrer noopener">
           <span>GDWEB</span>
@@ -374,7 +577,7 @@ async function renderActiveView() {
 async function renderMarkdown(run, item, kind) {
   const selectedKey = `${run.runId}:${item.referenceId}:${kind}:${run.updatedAt}`;
   elements.viewerContent.dataset.contentKey = selectedKey;
-  elements.viewerContent.innerHTML = loadingMarkup('문서를 불러오는 중입니다');
+  elements.viewerContent.innerHTML = loadingMarkup(t('loadingDocument'));
   refreshIcons();
 
   try {
@@ -385,7 +588,7 @@ async function renderMarkdown(run, item, kind) {
     elements.viewerContent.innerHTML = `
       <article class="document-shell">
         <div class="document-toolbar">
-          <button class="icon-button copy-button" type="button" title="Markdown 복사" aria-label="Markdown 복사">
+          <button class="icon-button copy-button" type="button" title="${escapeAttribute(t('copyMarkdown'))}" aria-label="${escapeAttribute(t('copyMarkdown'))}">
             <i data-lucide="copy"></i>
           </button>
         </div>
@@ -394,7 +597,7 @@ async function renderMarkdown(run, item, kind) {
     `;
     elements.viewerContent.querySelector('.copy-button').addEventListener('click', async () => {
       await navigator.clipboard.writeText(payload.markdown);
-      showToast('Markdown을 복사했습니다.');
+      showToast(t('markdownCopied'));
     });
     refreshIcons();
   } catch (error) {
@@ -425,14 +628,14 @@ function renderEvidence(run, item) {
                 type="button"
                 data-image-url="${escapeAttribute(url)}"
                 data-image-title="${escapeAttribute(`${label} ${evidence.part}/${evidence.totalParts}`)}"
-                aria-label="${escapeAttribute(`${label} 이미지 ${evidence.part}/${evidence.totalParts} 확대`)}"
+                aria-label="${escapeAttribute(t('enlargeEvidence', { label, part: evidence.part, total: evidence.totalParts }))}"
               >
                 <img src="${escapeAttribute(url)}" alt="${escapeAttribute(`${item.title} ${label} ${evidence.part}/${evidence.totalParts}`)}" loading="lazy" />
               </button>
               <figcaption class="evidence-caption">
                 <div class="evidence-title-row">
                   <strong>${label} · ${evidence.part}/${evidence.totalParts}</strong>
-                  <a href="${escapeAttribute(evidence.sourceUrl)}" target="_blank" rel="noreferrer noopener" title="GDWEB 원본 이미지" aria-label="GDWEB 원본 이미지">
+                  <a href="${escapeAttribute(evidence.sourceUrl)}" target="_blank" rel="noreferrer noopener" title="${escapeAttribute(t('originalGdwebImage'))}" aria-label="${escapeAttribute(t('originalGdwebImage'))}">
                     <i data-lucide="external-link"></i>
                   </a>
                 </div>
@@ -471,7 +674,7 @@ function renderEvents(run, item) {
             <time class="timeline-time">${escapeHtml(formatTime(event.at))}</time>
             <span class="timeline-marker" aria-hidden="true"></span>
             <div class="timeline-copy">
-              <strong>${escapeHtml(eventLabels[event.code] || event.code)}</strong>
+              <strong>${escapeHtml(eventLabel(event.code))}</strong>
               <span>${escapeHtml(eventDetail(event))}</span>
             </div>
           </li>
@@ -483,13 +686,13 @@ function renderEvents(run, item) {
 
 function eventDetail(event) {
   if (event.code === 'search.completed') {
-    return `${event.detail || '0'}개 작품을 찾았습니다.`;
+    return t('worksFound', { count: event.detail || '0' });
   }
   if (event.code === 'item.sampling.started') {
-    return `${event.detail || '0'}개 이미지 근거를 포함한 독립 요청입니다.`;
+    return t('isolatedImageRequest', { count: event.detail || '0' });
   }
   if (event.code === 'search.exclusions.applied') {
-    return event.detail || '제외 항목이 적용되었습니다.';
+    return event.detail || t('exclusionsWereApplied');
   }
   if (event.referenceId) return event.referenceId;
   return event.detail || 'Secret MCP';
@@ -497,17 +700,17 @@ function eventDetail(event) {
 
 function pendingMarkup(item) {
   if (item.status === 'failed') {
-    return errorMarkup(item.error || '작품 처리에 실패했습니다.');
+    return errorMarkup(item.error || t('workFailed'));
   }
-  return loadingMarkup(statusLabels[item.status] || '처리 중입니다');
+  return loadingMarkup(statusLabel(item.status) || t('processing'));
 }
 
 function renderGlobalEmpty() {
   state.renderedViewKey = null;
   elements.viewerContent.innerHTML = emptyMarkup(
     'file-search',
-    '작품별 문서를 선택하세요',
-    '각 작품의 DESIGN_INDEX는 별도 문서로 표시됩니다.'
+    t('selectDocument'),
+    t('separateDocuments')
   );
   refreshIcons();
 }
@@ -516,7 +719,7 @@ function statusMarkup(status) {
   return `
     <span class="status-line status-${escapeHtml(status)}">
       <span class="status-dot" aria-hidden="true"></span>
-      <span>${escapeHtml(statusLabels[status] || status)}</span>
+      <span>${escapeHtml(statusLabel(status))}</span>
     </span>
   `;
 }
@@ -543,7 +746,7 @@ function errorMarkup(message) {
   return `
     <div class="error-state">
       <i data-lucide="circle-alert"></i>
-      <strong>불러오지 못했습니다</strong>
+      <strong>${escapeHtml(t('loadFailed'))}</strong>
       <p>${escapeHtml(message)}</p>
     </div>
   `;
@@ -573,6 +776,16 @@ function isExcluded(referenceId) {
   return state.exclusions.some(item => item.referenceId === referenceId);
 }
 
+function localizeExclusionReason(reason) {
+  if (
+    reason === translations.en.manualExclusionReason ||
+    reason === translations.ko.manualExclusionReason
+  ) {
+    return t('manualExclusionReason');
+  }
+  return reason;
+}
+
 async function toggleExclusion(run, item) {
   if (!run || !item) return;
   const excluded = isExcluded(item.referenceId);
@@ -590,7 +803,7 @@ async function toggleExclusion(run, item) {
             referenceId: item.referenceId,
             title: item.title,
             gdwebUrl: item.gdwebUrl,
-            reason: '웹 뷰어에서 수동 제외',
+            reason: t('manualExclusionReason'),
             sourceRunId: run.runId,
           }),
         });
@@ -603,8 +816,8 @@ async function toggleExclusion(run, item) {
     refreshIcons();
     showToast(
       excluded
-        ? `${item.referenceId}를 다음 검색에 다시 포함합니다.`
-        : `${item.referenceId}를 다음 검색에서 제외합니다.`
+        ? t('includedToast', { referenceId: item.referenceId })
+        : t('excludedToast', { referenceId: item.referenceId })
     );
   } catch (error) {
     showToast(error.message);
@@ -623,7 +836,7 @@ function renderExclusionDialog() {
   if (state.exclusions.length === 0) {
     elements.exclusionList.innerHTML = emptyMarkup(
       'list-checks',
-      '제외한 작품이 없습니다',
+      t('noExclusions'),
       ''
     );
     refreshIcons();
@@ -635,15 +848,15 @@ function renderExclusionDialog() {
       <div class="exclusion-copy">
         <span class="eyebrow">${escapeHtml(item.referenceId.toUpperCase())}</span>
         <strong>${escapeHtml(item.title)}</strong>
-        <p>${escapeHtml(item.reason)}</p>
+        <p>${escapeHtml(localizeExclusionReason(item.reason))}</p>
         <time>${escapeHtml(formatDateTime(item.createdAt))}</time>
       </div>
       <button
         class="icon-button exclusion-remove"
         type="button"
         data-exclusion-remove="${escapeAttribute(item.referenceId)}"
-        title="제외 해제"
-        aria-label="${escapeAttribute(`${item.title} 제외 해제`)}"
+        title="${escapeAttribute(t('removeExclusion'))}"
+        aria-label="${escapeAttribute(`${item.title} ${t('removeExclusion')}`)}"
       >
         <i data-lucide="rotate-ccw"></i>
       </button>
@@ -667,7 +880,7 @@ function renderExclusionDialog() {
           renderViewerHeader();
           renderExclusionDialog();
           refreshIcons();
-          showToast('검색 제외를 해제했습니다.');
+          showToast(t('exclusionRemoved'));
         } catch (error) {
           button.disabled = false;
           showToast(error.message);
@@ -709,7 +922,7 @@ function setConnection(online) {
   elements.connection.classList.toggle('is-online', online);
   elements.connection.classList.toggle('is-offline', !online);
   elements.connection.querySelector('span:last-child').textContent =
-    online ? '실시간 연결' : '연결 끊김';
+    online ? t('online') : t('offline');
 }
 
 function openImageDialog(url, title) {
@@ -764,11 +977,11 @@ function refreshIcons() {
 
 function formatRunRange(run) {
   const years = run.allowedYears?.join(' · ') || run.targetYear;
-  return `${years} · ${run.requestedLimit}개 요청`;
+  return `${years} · ${t('requestCount', { count: run.requestedLimit })}`;
 }
 
 function formatDateTime(value) {
-  return new Intl.DateTimeFormat('ko-KR', {
+  return new Intl.DateTimeFormat(state.locale === 'ko' ? 'ko-KR' : 'en-US', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -778,7 +991,7 @@ function formatDateTime(value) {
 }
 
 function formatTime(value) {
-  return new Intl.DateTimeFormat('ko-KR', {
+  return new Intl.DateTimeFormat(state.locale === 'ko' ? 'ko-KR' : 'en-US', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
@@ -787,7 +1000,7 @@ function formatTime(value) {
 
 function formatRelativeTime(value) {
   const seconds = Math.round((new Date(value).getTime() - Date.now()) / 1000);
-  const formatter = new Intl.RelativeTimeFormat('ko-KR', { numeric: 'auto' });
+  const formatter = new Intl.RelativeTimeFormat(state.locale === 'ko' ? 'ko-KR' : 'en-US', { numeric: 'auto' });
   if (Math.abs(seconds) < 60) return formatter.format(seconds, 'second');
   const minutes = Math.round(seconds / 60);
   if (Math.abs(minutes) < 60) return formatter.format(minutes, 'minute');
