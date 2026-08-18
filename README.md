@@ -1,3 +1,9 @@
+## 목표 구조
+
+![Secret MCP 목표 구조](docs/assets/target-architecture.png)
+
+---
+
 # Secret MCP
 
 GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다. 각 파일 내부에는 확인 가능한 페이지·라우트별 레이아웃, 내비게이션, 픽셀 좌표, 색상, 컴포넌트와 반응형 명세가 들어갑니다.
