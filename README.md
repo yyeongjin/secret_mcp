@@ -1,3 +1,9 @@
+## 목표 구조
+
+![Secret MCP 목표 구조](docs/assets/target-architecture.png)
+
+---
+
 # Secret MCP
 
 GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다. 각 파일 내부에는 확인 가능한 페이지·라우트별 레이아웃, 내비게이션, 픽셀 좌표, 색상, 컴포넌트와 반응형 명세가 들어갑니다.
@@ -461,6 +467,7 @@ npm run web
 | `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | MCP 결과에 표시할 웹 뷰어 주소 |
 | `SECRET_MCP_WEB_HOST` | `127.0.0.1` | 웹 서버 bind 주소 |
 | `SECRET_MCP_WEB_PORT` | `4317` | 웹 서버 포트 |
+| `MCP_SAMPLING_TIMEOUT_MS` | `180000` | 작품별 독립 LLM 요청 제한 시간(ms) |
 | `MAX_CONTENT_LENGTH` | `500000` | 일반 페이지에서 추출할 본문 최대 길이 |
 | `DEFAULT_TIMEOUT` | `6000` | 일반 HTTP 및 브라우저 요청 timeout |
 | `MAX_BROWSERS` | `3` | 일반 추출용 최대 브라우저 수 |
@@ -472,5 +479,9 @@ npm run web
 ## 문서
 
 - [디자인 공모 및 어워드 사이트 목록](tmp/DESIGN_CONTEST_SITES.md)
+- [새 clone 재검증 기록](docs/VERIFICATION_TEST.md)
+- [영커피 DESIGN_INDEX](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26387.md)
+- [요리엔 DESIGN_INDEX](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26788.md)
+- [꾸블랙치킨 DESIGN_INDEX](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26853.md)
 - [대한항공 DESIGN_INDEX 명세서](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/documents/DESIGN_INDEX_gdweb-27294.md)
 - [대한항공 독립 요청 계약](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/contracts/gdweb-27294.md)
