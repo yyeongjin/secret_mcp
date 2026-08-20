@@ -66,6 +66,36 @@ The MCP client must support `sampling/createMessage`. When a client does not sup
 
 The MCP stdio server itself does not open an HTTP port. The client launches `node dist/index.js` as a child process and exchanges JSON-RPC messages over stdio. Only the separate web viewer process uses port `4317` by default.
 
+#### Direct Sampling Client for Hosts Without Sampling
+
+The server does not need to be modified when the outer MCP host cannot answer `sampling/createMessage`. A separate MCP protocol client can connect directly to `dist/index.js`, advertise `sampling: {}`, and handle every sampling request by launching a fresh Codex LLM process in a fresh temporary workspace.
+
+```ts
+const client = new Client(
+  { name: 'secret-mcp-sampling-client', version: '1.0.0' },
+  { capabilities: { sampling: {} } }
+);
+
+client.setRequestHandler(CreateMessageRequestSchema, async request => {
+  const workspace = await mkdtemp('secret-mcp-sampling-');
+  const response = await launchFreshCodex({
+    workspace,
+    messages: request.params.messages,
+    systemPrompt: request.params.systemPrompt,
+  });
+
+  return {
+    model: response.model,
+    role: 'assistant',
+    content: { type: 'text', text: response.markdown },
+  };
+});
+```
+
+The sampling handler must copy only the current request's text blocks and evidence images into that workspace. It must not reuse a Codex conversation, process, working directory, response file, or message history from another work. The workspace launches one new Codex process, waits for its complete Markdown response, returns that response to the pending MCP sampling call, and can then be removed after the server has saved the work's contract, evidence, and document.
+
+The server still controls the sequential queue: work 2 is not prepared until work 1 has returned and been saved. This makes the fresh process and workspace an execution-level equivalent of the protocol-level `includeContext: none` boundary without adding a combined fallback to the server. The direct client becomes the sampling-capable MCP host; it should use a tool-call timeout long enough for the per-work output budget and must never answer multiple sampling requests through one persistent LLM conversation.
+
 ### 4. Ask the LLM
 
 A separate `/web-design` slash command is not required.
@@ -92,12 +122,16 @@ The manual tool-call format is shown below.
     "includePreviousYear": true,
     "language": "English",
     "outputDirectory": "/absolute/path/to/design-index",
-    "maxTokens": 32000
+    "maxTokens": 131072
   }
 }
 ```
 
 If `outputDirectory` is omitted, the tool uses the `DESIGN_INDEX_OUTPUT_DIR` environment variable. If that variable is also absent, it uses the `design-index` directory under the server's working directory.
+
+`maxTokens` is a per-work output budget, not a budget shared by the run and not a budget divided equally between pages. A single work may contain multiple visible pages or routes, and every page must repeat the complete page-specific parts of the 19-section contract. The default and minimum are therefore `131072` tokens. Clients may request up to `262144` tokens for exceptionally large multi-page evidence sets.
+
+With `limit: 3`, the default run can request up to three independent `131072`-token outputs; the works do not share one `131072`-token pool. The connected sampling client and selected model must support the requested output size. If the model returns `stopReason: maxTokens`, the server treats that work as failed instead of saving a truncated `DESIGN_INDEX` as complete.
 
 When the tool completes, it returns the run ID, run-manifest path, per-work document paths, and web-viewer URL.
 
@@ -469,7 +503,7 @@ The isolation smoke test connects a mock MCP client that supports sampling and v
 | `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | Web-viewer address included in MCP results |
 | `SECRET_MCP_WEB_HOST` | `127.0.0.1` | Web-server bind address |
 | `SECRET_MCP_WEB_PORT` | `4317` | Web-server port |
-| `MCP_SAMPLING_TIMEOUT_MS` | `180000` | Timeout for each independent per-work LLM request in milliseconds |
+| `MCP_SAMPLING_TIMEOUT_MS` | `1800000` | Timeout for each independent per-work LLM request in milliseconds |
 | `MAX_CONTENT_LENGTH` | `500000` | Maximum page-body length extracted from a general webpage |
 | `DEFAULT_TIMEOUT` | `6000` | Timeout for general HTTP and browser requests |
 | `MAX_BROWSERS` | `3` | Maximum number of browsers used for general extraction |

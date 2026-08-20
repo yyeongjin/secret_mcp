@@ -66,6 +66,36 @@ MCP 클라이언트는 `sampling/createMessage`를 지원해야 합니다. 지�
 
 MCP stdio 서버 자체는 HTTP 포트를 열지 않습니다. 클라이언트가 `node dist/index.js`를 자식 프로세스로 실행하고 stdio로 JSON-RPC 메시지를 주고받습니다. 별도의 웹 뷰어 프로세스만 기본 `4317` 포트를 사용합니다.
 
+#### Sampling 미지원 호스트에서 직접 클라이언트 사용
+
+바깥 MCP 호스트가 `sampling/createMessage`에 응답하지 못해도 서버 코드를 수정할 필요는 없습니다. 별도의 MCP 프로토콜 클라이언트가 `dist/index.js`에 직접 연결하고 `sampling: {}` capability를 알린 뒤, sampling 요청이 올 때마다 새로운 임시 작업공간에서 새로운 Codex LLM 프로세스를 하나씩 실행할 수 있습니다.
+
+```ts
+const client = new Client(
+  { name: 'secret-mcp-sampling-client', version: '1.0.0' },
+  { capabilities: { sampling: {} } }
+);
+
+client.setRequestHandler(CreateMessageRequestSchema, async request => {
+  const workspace = await mkdtemp('secret-mcp-sampling-');
+  const response = await launchFreshCodex({
+    workspace,
+    messages: request.params.messages,
+    systemPrompt: request.params.systemPrompt,
+  });
+
+  return {
+    model: response.model,
+    role: 'assistant',
+    content: { type: 'text', text: response.markdown },
+  };
+});
+```
+
+sampling handler는 현재 요청의 텍스트 블록과 근거 이미지만 해당 작업공간에 복사해야 합니다. 다른 작품에서 사용한 Codex 대화, 프로세스, 작업 디렉터리, 응답 파일 또는 메시지 기록을 재사용하면 안 됩니다. 작업공간은 새로운 Codex 프로세스 하나를 실행하고 완전한 Markdown 응답을 기다린 뒤, 대기 중인 MCP sampling 호출에 응답을 반환합니다. 서버가 해당 작품의 계약, 근거와 문서를 저장한 후 임시 작업공간을 제거할 수 있습니다.
+
+작품 처리 순서는 계속 서버가 통제합니다. 작품 1의 응답이 반환되고 파일로 저장되기 전에는 작품 2의 요청을 준비하지 않습니다. 따라서 새로운 프로세스와 작업공간은 서버에 통합 fallback을 추가하지 않으면서 프로토콜의 `includeContext: none` 경계를 실행 수준에서도 보장합니다. 이 직접 클라이언트가 sampling을 지원하는 MCP 호스트 역할을 하며, 작품별 출력 예산에 충분한 tool-call timeout을 사용해야 하고 여러 sampling 요청을 하나의 지속적인 LLM 대화로 처리하면 안 됩니다.
+
 ### 4. LLM에 요청
 
 별도의 `/web-design` 슬래시 명령은 필요하지 않습니다.
@@ -92,12 +122,16 @@ Godot 프로젝트 사이트에 맞는 최근 디자인 레퍼런스 3개를 GDW
     "includePreviousYear": true,
     "language": "Korean",
     "outputDirectory": "/absolute/path/to/design-index",
-    "maxTokens": 32000
+    "maxTokens": 131072
   }
 }
 ```
 
 `outputDirectory`를 생략하면 `DESIGN_INDEX_OUTPUT_DIR` 환경변수를 사용하고, 환경변수도 없으면 서버 실행 디렉터리의 `design-index` 폴더를 사용합니다.
+
+`maxTokens`는 run 전체가 공유하는 예산이 아니며, 페이지마다 균등하게 나누는 값도 아닙니다. 작품 하나의 출력에 제공되는 예산입니다. 작품 하나에 보이는 페이지나 라우트가 여러 개라면 각 페이지에서 19개 계약의 페이지별 항목을 완전하게 반복해야 합니다. 따라서 기본값과 최솟값을 `131072`토큰으로 설정합니다. 페이지가 특히 많은 근거 묶음은 클라이언트와 모델이 지원하는 경우 최대 `262144`토큰까지 요청할 수 있습니다.
+
+`limit: 3`이면 기본 run에서 서로 독립된 `131072`토큰 출력 요청을 최대 세 번 수행할 수 있습니다. 세 작품이 하나의 `131072`토큰 예산을 나누지 않습니다. 연결된 sampling 클라이언트와 선택 모델이 요청한 출력 크기를 지원해야 합니다. 모델이 `stopReason: maxTokens`를 반환하면 서버는 잘린 `DESIGN_INDEX`를 완성본으로 저장하지 않고 해당 작품을 실패 처리합니다.
 
 도구가 완료되면 run ID, run manifest 경로, 작품별 문서 경로와 웹 뷰어 URL을 반환합니다.
 
@@ -469,7 +503,7 @@ npm run web
 | `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | MCP 결과에 표시할 웹 뷰어 주소 |
 | `SECRET_MCP_WEB_HOST` | `127.0.0.1` | 웹 서버 bind 주소 |
 | `SECRET_MCP_WEB_PORT` | `4317` | 웹 서버 포트 |
-| `MCP_SAMPLING_TIMEOUT_MS` | `180000` | 작품별 독립 LLM 요청 제한 시간(ms) |
+| `MCP_SAMPLING_TIMEOUT_MS` | `1800000` | 작품별 독립 LLM 요청 제한 시간(ms) |
 | `MAX_CONTENT_LENGTH` | `500000` | 일반 페이지에서 추출할 본문 최대 길이 |
 | `DEFAULT_TIMEOUT` | `6000` | 일반 HTTP 및 브라우저 요청 timeout |
 | `MAX_BROWSERS` | `3` | 일반 추출용 최대 브라우저 수 |

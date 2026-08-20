@@ -35,6 +35,11 @@ client.setRequestHandler(CreateMessageRequestSchema, async request => {
   if (request.params.includeContext !== 'none') {
     throw new Error(`${referenceId} inherited another context`);
   }
+  if (request.params.maxTokens !== 131072) {
+    throw new Error(
+      `${referenceId} received maxTokens=${request.params.maxTokens}; expected the 131072 multi-page default`
+    );
+  }
   const requiredContractMarkers = [
     'Schema: secret-mcp/design-index/v2',
     'Site Map and Page/Route Inventory',
@@ -122,6 +127,30 @@ const transport = new StdioClientTransport({
 
 try {
   await client.connect(transport);
+  let undersizedBudgetRejected = false;
+  try {
+    const undersized = await client.callTool({
+      name: 'generate-gdweb-design-indexes',
+      arguments: {
+        query: 'token-budget-validation',
+        limit: 1,
+        maxTokens: 32000,
+      },
+    });
+    const undersizedText = undersized.content
+      .filter(item => item.type === 'text')
+      .map(item => item.text)
+      .join('\n');
+    undersizedBudgetRejected = Boolean(
+      undersized.isError && undersizedText.includes('131072')
+    );
+  } catch (error) {
+    undersizedBudgetRejected = String(error).includes('131072');
+  }
+  if (!undersizedBudgetRejected) {
+    throw new Error('The server accepted an undersized 32000-token DESIGN_INDEX budget');
+  }
+
   const preview = await client.callTool({
     name: 'search-gdweb-designs',
     arguments: {
@@ -161,7 +190,6 @@ try {
       awardOnly: true,
       includePreviousYear: true,
       outputDirectory,
-      maxTokens: 4000,
     },
   });
   const resultText = result.content
@@ -244,6 +272,7 @@ try {
   console.log(JSON.stringify({
     runId: manifest.runId,
     runDirectory: manifest.runDirectory,
+    minimumTokenBudget: 131072,
     excludedReferenceId,
     samplingRequests: samples.map(({ referenceId, imageCount }) => ({
       referenceId,

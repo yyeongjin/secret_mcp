@@ -22,6 +22,8 @@ Secret MCP는 다섯 개의 MCP 도구를 공개합니다. 두 도구는 GDWEB �
 
 `generate-gdweb-design-indexes`는 연결된 클라이언트가 MCP sampling 지원을 알릴 것을 요구합니다. 각 작품은 `includeContext: "none"`인 별도 `sampling/createMessage` 요청으로 전달됩니다. sampling을 사용할 수 없으면 도구는 명확하게 실패하며 통합 문맥 fallback을 실행하지 않습니다.
 
+바깥 호스트가 sampling을 구현하지 않았다면 별도의 MCP 프로토콜 클라이언트가 `capabilities: { sampling: {} }`로 stdio 서버에 직접 연결하고 `CreateMessageRequestSchema` handler를 등록할 수 있습니다. handler는 들어오는 요청마다 새로운 임시 작업공간을 만들고 새로운 Codex LLM 프로세스를 실행하며, 해당 요청의 텍스트와 이미지만 복사해야 합니다. 완성된 Markdown을 대기 중인 sampling 호출에 반환하고 다른 작품의 프로세스, 대화, 작업공간 또는 응답을 재사용하면 안 됩니다. 서버는 변경하지 않으며 작품을 계속 순차 처리하므로, 이 클라이언트 실행 경계가 `includeContext: "none"`과 동일한 격리를 보존합니다.
+
 나머지 네 도구는 MCP sampling을 요구하지 않습니다.
 
 ## 도구: `generate-gdweb-design-indexes`
@@ -41,7 +43,7 @@ GDWEB을 내부에서 검색하고, 영구 제외 목록을 적용하고, 이미
   "includePreviousYear": true,
   "language": "Korean",
   "outputDirectory": "/absolute/path/to/design-index",
-  "maxTokens": 32000
+  "maxTokens": 131072
 }
 ```
 
@@ -54,7 +56,9 @@ GDWEB을 내부에서 검색하고, 영구 제외 목록을 적용하고, 이미
 | `includePreviousYear` | 불리언 또는 불리언 문자열 | 아니요 | `true` | `year`와 함께 그 직전 연도를 허용 |
 | `language` | `English` 또는 `Korean` | 아니요 | `English` | 실행에서 생성되는 모든 문서에 사용할 언어 |
 | `outputDirectory` | 문자열 | 아니요 | 해석된 출력 디렉터리 | 이 호출에 한해 `DESIGN_INDEX_OUTPUT_DIR`을 재정의 |
-| `maxTokens` | 숫자 또는 숫자 문자열 | 아니요 | `32000` | 각 독립 sampling 호출에 요청할 토큰 제한, 2,000부터 50,000까지의 정수 |
+| `maxTokens` | 숫자 또는 숫자 문자열 | 아니요 | `131072` | 작품별 다중 페이지 출력 예산, 131,072부터 262,144까지의 정수 |
+
+`maxTokens`는 작품마다 독립적으로 적용됩니다. run 전체가 공유하지 않으며 작품 안의 페이지가 나누어 갖는 값도 아닙니다. 문서 하나가 보이는 모든 페이지를 포함하고 페이지마다 전체 페이지 계약을 반복해야 하므로 기본값을 크게 설정했습니다. sampling 클라이언트와 모델이 요청한 출력 크기를 지원해야 합니다. `stopReason`이 `maxTokens`이면 잘린 문서를 완성본으로 인정하지 않고 해당 작품을 실패 처리합니다.
 
 출력 디렉터리는 다음 순서로 결정합니다.
 
@@ -121,7 +125,7 @@ Active exclusions applied: 0
 - 독립 LLM 요청이 빈 문서를 반환함
 - 출력 디렉터리 또는 파일 쓰기 실패
 
-작품별 sampling 제한 시간 기본값은 180,000ms이며 `MCP_SAMPLING_TIMEOUT_MS`로 변경할 수 있습니다.
+작품별 sampling 제한 시간 기본값은 1,800,000ms이며 `MCP_SAMPLING_TIMEOUT_MS`로 변경할 수 있습니다.
 
 ## 도구: `search-gdweb-designs`
 
@@ -332,7 +336,7 @@ DESIGN_INDEX_OUTPUT_DIR/.secret-mcp/exclusions.json
 | --- | --- | --- |
 | `DESIGN_INDEX_OUTPUT_DIR` | `./design-index` | 생성 산출물과 제외 목록이 공유하는 디렉터리 |
 | `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | 생성 도구가 반환할 뷰어 URL |
-| `MCP_SAMPLING_TIMEOUT_MS` | `180000` | 각 격리 sampling 요청 제한 시간 |
+| `MCP_SAMPLING_TIMEOUT_MS` | `1800000` | 각 격리 sampling 요청 제한 시간 |
 | `MAX_CONTENT_LENGTH` | `500000` | 일반 웹페이지에서 추출할 기본 최대 본문 길이 |
 | `DEFAULT_TIMEOUT` | `6000` | 일반 HTTP와 브라우저 제한 시간 |
 | `MAX_BROWSERS` | `3` | 일반 추출용 최대 브라우저 풀 크기 |

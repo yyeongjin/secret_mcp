@@ -22,6 +22,8 @@ The server uses MCP over stdio. An MCP client starts `dist/index.js` as a child 
 
 `generate-gdweb-design-indexes` requires the connected client to advertise MCP sampling support. Every work is sent through a separate `sampling/createMessage` request with `includeContext: "none"`. If sampling is unavailable, the tool fails explicitly and does not run a combined-context fallback.
 
+When the outer host does not implement sampling, a direct MCP protocol client can connect to the stdio server with `capabilities: { sampling: {} }` and register a `CreateMessageRequestSchema` handler. The handler must create a fresh temporary workspace and launch a fresh Codex LLM process for every incoming request, copying only that request's text and images. It must return the completed Markdown to the pending sampling call and must not reuse a process, conversation, workspace, or response from another work. The server remains unchanged and continues to serialize the works, so this client-side execution boundary preserves the same isolation intended by `includeContext: "none"`.
+
 The other four tools do not require MCP sampling.
 
 ## Tool: `generate-gdweb-design-indexes`
@@ -41,7 +43,7 @@ Search GDWEB internally, apply the persistent exclusion list, prepare image evid
   "includePreviousYear": true,
   "language": "English",
   "outputDirectory": "/absolute/path/to/design-index",
-  "maxTokens": 32000
+  "maxTokens": 131072
 }
 ```
 
@@ -54,7 +56,9 @@ Search GDWEB internally, apply the persistent exclusion list, prepare image evid
 | `includePreviousYear` | boolean or boolean string | No | `true` | Allow the year immediately before `year` in addition to `year` |
 | `language` | `English` or `Korean` | No | `English` | Language used for every generated document in the run |
 | `outputDirectory` | string | No | resolved output directory | Overrides `DESIGN_INDEX_OUTPUT_DIR` for this call |
-| `maxTokens` | number or numeric string | No | `32000` | Token limit requested for each independent sampling call; integer from 2,000 to 50,000 |
+| `maxTokens` | number or numeric string | No | `131072` | Per-work multi-page output budget; integer from 131,072 to 262,144 |
+
+`maxTokens` applies independently to each work. It is not shared by the run and is not divided between the pages inside a work. The default is intentionally large because one document must include all visible pages and repeat the complete page-specific contract for every page. The sampling client and model must support the requested output size. A `stopReason` of `maxTokens` fails that work so a truncated document is not accepted as complete.
 
 The output directory is resolved in this order:
 
@@ -121,7 +125,7 @@ The tool sets `isError: true` when at least one selected work fails. Successfull
 - Empty document returned by the isolated LLM request
 - Output-directory or file-write failure
 
-The per-work sampling timeout defaults to 180,000ms and can be changed with `MCP_SAMPLING_TIMEOUT_MS`.
+The per-work sampling timeout defaults to 1,800,000ms and can be changed with `MCP_SAMPLING_TIMEOUT_MS`.
 
 ## Tool: `search-gdweb-designs`
 
@@ -332,7 +336,7 @@ Exclusions affect future searches only. Existing runs, evidence, contracts, and 
 | --- | --- | --- |
 | `DESIGN_INDEX_OUTPUT_DIR` | `./design-index` | Shared generated-artifact and exclusion directory |
 | `SECRET_MCP_WEB_ORIGIN` | `http://127.0.0.1:4317` | Viewer URL returned by the generation tool |
-| `MCP_SAMPLING_TIMEOUT_MS` | `180000` | Timeout for each isolated sampling request |
+| `MCP_SAMPLING_TIMEOUT_MS` | `1800000` | Timeout for each isolated sampling request |
 | `MAX_CONTENT_LENGTH` | `500000` | Default maximum content extracted from a general webpage |
 | `DEFAULT_TIMEOUT` | `6000` | General HTTP and browser timeout |
 | `MAX_BROWSERS` | `3` | Maximum browser-pool size for general extraction |

@@ -96,7 +96,7 @@ Following the user scenario, three food-domain references were selected from GDW
 
 Each of the three tasks received only its own work's request contract and image evidence. Every document contains all 19 required sections: the page and route inventory, shared shell, navigation, per-page coordinates, section deep dives, components, HEX/RGB/HSL colors, typography, assets, the `1440/1280/1024/768/390/360px` responsive matrix, interactions, accessibility, data model, architecture, task graph, per-page QA, and uncertainties.
 
-While preparing the large evidence images for `gdweb-26853`, the MCP SDK's default 60-second sampling limit was encountered. The `MCP_SAMPLING_TIMEOUT_MS` environment variable was added with a default value of `180000ms`, and rerunning the same work then succeeded.
+While preparing the large evidence images for `gdweb-26853`, the MCP SDK's default 60-second sampling limit was encountered. `MCP_SAMPLING_TIMEOUT_MS` was initially introduced at `180000ms`. The current runtime default is `1800000ms` because a strict multi-page `DESIGN_INDEX` now requests a `131072`-token per-work output budget.
 
 Generated documents:
 

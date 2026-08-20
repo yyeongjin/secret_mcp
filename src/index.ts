@@ -24,7 +24,29 @@ const samplingTimeoutMs =
   Number.isFinite(configuredSamplingTimeoutMs) &&
   configuredSamplingTimeoutMs > 0
     ? configuredSamplingTimeoutMs
-    : 180_000;
+    : 1_800_000;
+
+const MIN_DESIGN_INDEX_TOKENS = 131_072;
+const DEFAULT_DESIGN_INDEX_TOKENS = 131_072;
+const MAX_DESIGN_INDEX_TOKENS = 262_144;
+
+function createDesignIndexMaxTokensSchema(description?: string) {
+  const schema = z.union([z.number(), z.string()]).transform((value) => {
+    const parsed = typeof value === 'string' ? Number(value) : value;
+    if (
+      !Number.isInteger(parsed) ||
+      parsed < MIN_DESIGN_INDEX_TOKENS ||
+      parsed > MAX_DESIGN_INDEX_TOKENS
+    ) {
+      throw new Error(
+        `Invalid maxTokens: must be an integer between ${MIN_DESIGN_INDEX_TOKENS} and ${MAX_DESIGN_INDEX_TOKENS}`
+      );
+    }
+    return parsed;
+  }).default(DEFAULT_DESIGN_INDEX_TOKENS);
+
+  return description ? schema.describe(description) : schema;
+}
 
 interface ToolRegistrar {
   registerTool(
@@ -343,13 +365,9 @@ class SecretMCPServer {
           }).default(true).describe('Whether to include the previous year'),
           language: z.enum(['English', 'Korean']).default('English').describe('Language for every generated document. Defaults to English; choose Korean for Korean output.'),
           outputDirectory: z.string().min(1).optional().describe('Directory for generated DESIGN_INDEX files. Defaults to DESIGN_INDEX_OUTPUT_DIR or ./design-index.'),
-          maxTokens: z.union([z.number(), z.string()]).transform((val) => {
-            const num = typeof val === 'string' ? parseInt(val, 10) : val;
-            if (isNaN(num) || num < 2000 || num > 50000) {
-              throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
-            }
-            return num;
-          }).default(32000).describe('Maximum tokens requested for each isolated page-by-page specification (2,000-50,000)'),
+          maxTokens: createDesignIndexMaxTokensSchema(
+            'Per-work output budget for a complete multi-page specification (131,072-262,144 tokens; default 131,072)'
+          ),
         }) as z.ZodTypeAny,
       },
       async (args: unknown) => {
@@ -387,13 +405,7 @@ class SecretMCPServer {
             }).default(true),
             language: z.enum(['English', 'Korean']).default('English'),
             outputDirectory: z.string().min(1).optional(),
-            maxTokens: z.union([z.number(), z.string()]).transform((val) => {
-              const num = typeof val === 'string' ? parseInt(val, 10) : val;
-              if (isNaN(num) || num < 2000 || num > 50000) {
-                throw new Error('Invalid maxTokens: must be a number between 2000 and 50000');
-              }
-              return num;
-            }).default(32000),
+            maxTokens: createDesignIndexMaxTokensSchema(),
           });
           const parsed = schema.parse(args);
           const clientCapabilities = this.server.server.getClientCapabilities();
