@@ -1,18 +1,86 @@
 **English** | [한국어](README.ko.md)
 
-## Target Architecture
-
-![Secret MCP target architecture](docs/assets/target-architecture.png)
-
----
-
 # Secret MCP
 
-Secret MCP is a local Model Context Protocol (MCP) server that searches GDWEB for recent design references and **creates a separate LLM request and a separate `DESIGN_INDEX` file for every search result**. Each file contains page- and route-specific layouts, navigation, pixel coordinates, colors, components, and responsive specifications that can be verified from the available evidence.
+**An evidence-grounded MCP server for web design analysis, screenshot-to-specification workflows, and frontend reconstruction planning.**
+
+```bash
+npx -y secret-design-mcp
+```
+
+Secret MCP is a local Model Context Protocol (MCP) server that searches GDWEB for recent design references and **creates a separate LLM request and a separate `DESIGN_INDEX` file for every search result**. Each file contains page- and route-specific layouts, navigation, pixel coordinates, colors, components, and responsive specifications traceable to the supplied visual evidence.
 
 The name `Secret MCP` does not mean that the project provides secret features or private data. It was the project name used while experimenting in a private repository with the idea of building an MCP server around design websites. The project's current purpose is to extract reproducible structural evidence from public design references and turn it into one specification per work that an LLM can apply to a new project.
 
 Images and descriptions from multiple works are never combined in a single LLM context or document. The server processes search results sequentially inside the server, creates an independent MCP `sampling/createMessage` request for each work, saves that work's file, and only then advances to the next work. A separate local web application lets you select one work at a time, inspect its source evidence, measured colors and coordinates, LLM contract, generation log, and final document, and manage the exclusion list for subsequent searches.
+
+## Research Note
+
+> **Evidence-Isolated Multimodal Design Analysis through MCP Sampling**
+>
+> Working paper and implementation report · Secret MCP v0.6.0 · not peer reviewed
+
+### Abstract
+
+Secret MCP implements an auditable pipeline for converting public webpage screenshots into implementation-oriented design specifications. The system prepares desktop and mobile visual evidence, records crop coordinates and representative pixel colors, and invokes client-side MCP sampling once per reference. Unlike workflows that concatenate several design references into one prompt, Secret MCP treats reference identity as both a request boundary and an artifact boundary: one reference produces one sampling request, one request contract, and one `DESIGN_INDEX` document. Each request asks for `includeContext: none` and applies the same 19-section specification contract covering routes, geometry, components, design tokens, responsive behavior, accessibility, implementation tasks, acceptance criteria, and uncertainty. This report evaluates protocol-level isolation and artifact production; it does not claim that one language model, prompt, or reconstruction method outperforms another. A live smoke test verifies the request boundary, while a preserved three-reference run provides descriptive measurements and a qualitative implementation case.
+
+### Research Questions
+
+| Question | Current evidence | Status |
+| --- | --- | --- |
+| **RQ1.** Can an MCP design-analysis tool maintain one-reference-per-request isolation? | Live sampling smoke test with cross-reference ID inspection and output-file checks | Verified within the test scope |
+| **RQ2.** Can screenshot evidence be transformed into auditable spatial, color, and document artifacts? | Preserved three-reference run with evidence manifests, contracts, and generated documents | Descriptively verified |
+| **RQ3.** Can the resulting specification guide a distinct frontend implementation? | AEROFLOW qualitative case study | Preliminary; no controlled comparison |
+
+### Formal System Model
+
+For reference `r_i`, the prepared evidence set contains image tiles `I`, crop bounds `B`, representative-color measurements `P`, and source metadata `M`. The fixed specification contract is `C`; the independent request and resulting document are `q_i` and `D_i`.
+
+```text
+E_i = { I_i,k, B_i,k, P_i,k, M_i }
+q_i = sampling/createMessage(C, E_i; includeContext = none)
+D_i = G_theta(q_i)
+
+References(q_i) = { r_i }
+For every i != j: referenceId(r_j) is absent from q_i
+```
+
+Coordinates measured inside a prepared tile map back to the original screenshot as follows.
+
+```text
+x_source = (cropLeft + x_tile) / scaleX
+y_source = (cropTop  + y_tile) / scaleY
+```
+
+This is an operational isolation invariant, not a claim of statistical independence. The server and smoke test can inspect request contents and artifacts; they cannot prove what an arbitrary external model provider may retain outside the MCP message.
+
+## Empirical Results
+
+### Protocol Isolation
+
+![Figure 1. Reference-ID incidence matrix and one-to-one mapping from two GDWEB references to two MCP sampling requests and two output documents.](docs/assets/results/fig1-protocol-isolation.svg)
+
+*Figure 1.* Live smoke test recorded on 2026-08-22 using the query `금융` (`n = 2` sampled references after excluding `gdweb-26905`). Each request contained its own reference ID and visual evidence, no other sampled reference ID, and `includeContext: none`; the run produced two distinct Markdown files. The test verifies observable request composition and file separation, not model-memory behavior outside the protocol.
+
+### Recorded Run Measurements
+
+![Figure 2. Four-panel analysis of evidence tiling, image payload, representative-color measurements, document size, and 19-section heading coverage for three references.](docs/assets/results/fig2-recorded-run-measurements.svg)
+
+*Figure 2.* Descriptive measurements from preserved run `2026-07-29T15-54-10-483Z-5c70317e` (`n = 3` references). The run prepared 12 evidence images totaling 816.9 decimal KB and recorded 96 representative-color measurements. It produced three `DESIGN_INDEX` documents totaling 27,391 whitespace-delimited tokens and 187.0 decimal KB. All three contain headings 1–19; heading presence does not establish semantic correctness.
+
+### Qualitative Case Study
+
+![Figure 3. Actual Secret MCP evidence viewer, per-reference DESIGN_INDEX, and the specification-driven AEROFLOW implementation.](docs/assets/results/fig3-qualitative-case-study.svg)
+
+*Figure 3.* A preserved qualitative trace from the GDWEB evidence viewer to the generated Korean Air `DESIGN_INDEX` and then to AEROFLOW. AEROFLOW intentionally introduces new branding, content, imagery, and functionality; this example illustrates specification use and is not a controlled visual-fidelity comparison.
+
+### Interpretation and Limitations
+
+- The live isolation result has `n = 2`; the recorded artifact analysis has `n = 3`. Neither supports broad claims about design quality or model performance.
+- The current evaluation has no control group, human rating, repeated trials, confidence intervals, or comparison against screenshot-to-code baselines.
+- Representative colors are measured after resizing, JPEG normalization, and channel quantization. They are screenshot evidence, not proof of the source website's CSS tokens.
+- The 19/19 result measures required heading presence. A future benchmark must separately evaluate factual grounding, coordinate error, color difference, responsive behavior, and implementation fidelity.
+- The qualitative implementation is an existence example, not evidence that Secret MCP improves reconstruction quality.
 
 ## Usage
 
@@ -494,6 +562,13 @@ npm run smoke:gdweb-isolation
 npm run web
 ```
 
+Regenerate the research figures from the stored manifest and smoke-test snapshot with:
+
+```bash
+python3 -m pip install -r scripts/requirements-figures.txt
+python3 scripts/generate-readme-figures.py
+```
+
 The isolation smoke test connects a mock MCP client that supports sampling and verifies the following behavior.
 
 - The number of search results equals the number of sampling requests.
@@ -533,3 +608,27 @@ The isolation smoke test connects a mock MCP client that supports sampling and v
 - [Ggublack Chicken DESIGN_INDEX, Korean historical output](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26853.md)
 - [Korean Air DESIGN_INDEX specification, Korean historical output](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/documents/DESIGN_INDEX_gdweb-27294.md)
 - [Korean Air independent request contract](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/contracts/gdweb-27294.md)
+
+## Related Work and References
+
+Secret MCP is positioned as an implementation artifact adjacent to multimodal UI understanding and screenshot-to-code research. It has not yet been evaluated on the datasets or metrics used by the papers below, so their results must not be interpreted as Secret MCP results.
+
+1. Chenglei Si, Yanzhe Zhang, Ryan Li, Zhengyuan Yang, Ruibo Liu, and Diyi Yang. **Design2Code: Benchmarking Multimodal Code Generation for Automated Front-End Engineering.** NAACL 2025. Introduces real-world screenshot-to-code evaluation with visual and element-level metrics. [Paper](https://aclanthology.org/2025.naacl-long.199/)
+2. Bryan Wang, Gang Li, Xin Zhou, Zhourong Chen, Tovi Grossman, and Yang Li. **Screen2Words: Automatic Mobile UI Summarization with Multimodal Learning.** UIST 2021. Studies representations that combine screenshot, text, structure, and UI semantics. [Paper](https://arxiv.org/abs/2108.03353)
+3. Jing Yu Koh, Robert Lo, Lawrence Jang, Vikram Duvvur, Ming Chong Lim, Po-Yu Huang, Graham Neubig, Shuyan Zhou, Ruslan Salakhutdinov, and Daniel Fried. **VisualWebArena: Evaluating Multimodal Agents on Realistic Visually Grounded Web Tasks.** ACL 2024. Establishes the importance and difficulty of visually grounded web-agent evaluation. [Paper](https://aclanthology.org/2024.acl-long.50/)
+4. Model Context Protocol. **Sampling specification.** Defines client-mediated `sampling/createMessage`, including request messages, model preferences, token budgets, and context controls. [Specification](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
+
+## Citation
+
+Secret MCP is currently software with a working research note, not a peer-reviewed publication.
+
+```bibtex
+@software{jo2026secretmcp,
+  author  = {{조영진}},
+  title   = {Secret MCP: Evidence-Isolated Multimodal Design Analysis through MCP Sampling},
+  year    = {2026},
+  version = {0.6.0},
+  url     = {https://github.com/yyeongjin/secret_mcp},
+  note    = {Software artifact and working implementation report}
+}
+```

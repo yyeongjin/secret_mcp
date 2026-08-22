@@ -14,6 +14,7 @@
     "docs/VERIFICATION_TEST.md",
     "docs/VERIFICATION_TEST.ko.md",
     "docs/assets/target-architecture.png",
+    "docs/assets/results",
     "README.md",
     "README.ko.md",
     "LICENSE",
@@ -40,6 +41,10 @@
     "mcp",
     "web-search",
     "web-design",
+    "design-analysis",
+    "screenshot-to-specification",
+    "frontend-reconstruction",
+    "multimodal",
     "gdweb",
     "ai",
     "llm"

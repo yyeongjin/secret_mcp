@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -269,17 +269,35 @@ try {
     throw new Error('Run manifest did not record the active exclusion');
   }
 
-  console.log(JSON.stringify({
+  const resultSummary = {
     runId: manifest.runId,
-    runDirectory: manifest.runDirectory,
+    recordedAt: new Date().toISOString(),
+    query: process.env.QUERY || '금융',
     minimumTokenBudget: 131072,
     excludedReferenceId,
+    assertions: {
+      oneReferencePerRequest: true,
+      crossReferenceLeaks: 0,
+      distinctReferences: true,
+      includeContext: 'none',
+      exclusionHonored: true,
+      contractMarkersPresent: true,
+      outputDocumentCount: files.length,
+    },
     samplingRequests: samples.map(({ referenceId, imageCount }) => ({
       referenceId,
       imageCount,
     })),
     files,
-  }, null, 2));
+  };
+  const serializedResult = `${JSON.stringify(resultSummary, null, 2)}\n`;
+  const resultPath = process.env.SMOKE_RESULT_PATH;
+  if (resultPath) {
+    const absoluteResultPath = path.resolve(resultPath);
+    await mkdir(path.dirname(absoluteResultPath), { recursive: true });
+    await writeFile(absoluteResultPath, serializedResult, 'utf8');
+  }
+  console.log(serializedResult.trim());
 } finally {
   await client.close();
   if (!keepOutput) {
