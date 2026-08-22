@@ -1,6 +1,7 @@
 {
-  "name": "secret-mcp",
+  "name": "@yyeongjin/secret-mcp",
   "version": "0.6.0",
+  "mcpName": "io.github.yyeongjin/secret-mcp",
   "description": "Local MCP server and web viewer for isolated per-result GDWEB design specifications",
   "license": "MIT",
   "type": "module",
@@ -8,11 +9,16 @@
   "files": [
     "dist",
     "web",
-    "docs",
+    "docs/API.md",
+    "docs/API.ko.md",
+    "docs/VERIFICATION_TEST.md",
+    "docs/VERIFICATION_TEST.ko.md",
+    "docs/assets/target-architecture.png",
     "README.md",
     "README.ko.md",
     "LICENSE",
-    "mcp.json"
+    "mcp.json",
+    "server.json"
   ],
   "engines": {
     "node": ">=20.19.0"

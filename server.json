@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.yyeongjin/secret-mcp",
+  "title": "Secret MCP",
+  "description": "Local MCP server for isolated, evidence-backed GDWEB design analysis and web search.",
+  "repository": {
+    "url": "https://github.com/yyeongjin/secret_mcp",
+    "source": "github"
+  },
+  "version": "0.6.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@yyeongjin/secret-mcp",
+      "version": "0.6.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

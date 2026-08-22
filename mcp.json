@@ -1,9 +1,10 @@
 {
   "mcpServers": {
     "secret-mcp": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/secret_mcp/dist/index.js"
+        "-y",
+        "@yyeongjin/secret-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",

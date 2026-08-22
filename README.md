@@ -20,6 +20,14 @@ Images and descriptions from multiple works are never combined in a single LLM c
 
 Node.js 20.19 or later is required.
 
+The published MCP server can be launched with:
+
+```bash
+npx -y @yyeongjin/secret-mcp
+```
+
+Clone the repository when you also need the local viewer or want to work on the source:
+
 ```bash
 git clone https://github.com/yyeongjin/secret_mcp.git
 cd secret_mcp
@@ -49,9 +57,10 @@ The web application displays the generation-run list, per-work progress, GDWEB e
 {
   "mcpServers": {
     "secret-mcp": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/secret_mcp/dist/index.js"
+        "-y",
+        "@yyeongjin/secret-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",
@@ -61,6 +70,8 @@ The web application displays the generation-run list, per-work progress, GDWEB e
   }
 }
 ```
+
+For a source checkout, replace `command` and `args` with `"command": "node"` and `"args": ["/absolute/path/to/secret_mcp/dist/index.js"]`.
 
 The MCP client must support `sampling/createMessage`. When a client does not support sampling, the server returns an explicit error instead of running a fallback that places multiple works in the same context.
 

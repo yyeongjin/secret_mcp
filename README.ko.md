@@ -20,6 +20,14 @@ GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하�
 
 Node.js 20.19 이상이 필요합니다.
 
+배포된 MCP 서버는 다음 명령으로 실행할 수 있습니다.
+
+```bash
+npx -y @yyeongjin/secret-mcp
+```
+
+로컬 웹 뷰어를 함께 사용하거나 소스 코드를 수정하려면 저장소를 복제합니다.
+
 ```bash
 git clone https://github.com/yyeongjin/secret_mcp.git
 cd secret_mcp
@@ -49,9 +57,10 @@ http://127.0.0.1:4317
 {
   "mcpServers": {
     "secret-mcp": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/absolute/path/to/secret_mcp/dist/index.js"
+        "-y",
+        "@yyeongjin/secret-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",
@@ -61,6 +70,8 @@ http://127.0.0.1:4317
   }
 }
 ```
+
+소스 체크아웃을 직접 실행하려면 `command`와 `args`를 각각 `"command": "node"`, `"args": ["/absolute/path/to/secret_mcp/dist/index.js"]`로 바꿉니다.
 
 MCP 클라이언트는 `sampling/createMessage`를 지원해야 합니다. 지원하지 않는 클라이언트에서는 여러 작품을 같은 문맥에 넣는 fallback을 실행하지 않고 명확한 오류를 반환합니다.
 
