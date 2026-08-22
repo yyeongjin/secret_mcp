@@ -23,7 +23,7 @@ Node.js 20.19 이상이 필요합니다.
 배포된 MCP 서버는 다음 명령으로 실행할 수 있습니다.
 
 ```bash
-npx -y @yyeongjin/secret-mcp
+npx -y secret-design-mcp
 ```
 
 로컬 웹 뷰어를 함께 사용하거나 소스 코드를 수정하려면 저장소를 복제합니다.
@@ -60,7 +60,7 @@ http://127.0.0.1:4317
       "command": "npx",
       "args": [
         "-y",
-        "@yyeongjin/secret-mcp"
+        "secret-design-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",

@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@yyeongjin/secret-mcp"
+        "secret-design-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",

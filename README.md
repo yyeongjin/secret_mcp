@@ -23,7 +23,7 @@ Node.js 20.19 or later is required.
 The published MCP server can be launched with:
 
 ```bash
-npx -y @yyeongjin/secret-mcp
+npx -y secret-design-mcp
 ```
 
 Clone the repository when you also need the local viewer or want to work on the source:
@@ -60,7 +60,7 @@ The web application displays the generation-run list, per-work progress, GDWEB e
       "command": "npx",
       "args": [
         "-y",
-        "@yyeongjin/secret-mcp"
+        "secret-design-mcp"
       ],
       "env": {
         "DESIGN_INDEX_OUTPUT_DIR": "/absolute/path/to/design-index",

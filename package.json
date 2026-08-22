@@ -1,5 +1,5 @@
 {
-  "name": "@yyeongjin/secret-mcp",
+  "name": "secret-design-mcp",
   "version": "0.6.0",
   "mcpName": "io.github.yyeongjin/secret-mcp",
   "description": "Local MCP server and web viewer for isolated per-result GDWEB design specifications",
@@ -24,7 +24,7 @@
     "node": ">=20.19.0"
   },
   "bin": {
-    "secret-mcp": "./dist/index.js"
+    "secret-design-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc && echo '✅ TypeScript compilation complete: dist/index.js'",
@@ -47,7 +47,7 @@
   "author": "yyeongjin",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yyeongjin/secret_mcp.git"
+    "url": "git+https://github.com/yyeongjin/secret_mcp.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
