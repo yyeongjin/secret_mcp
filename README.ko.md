@@ -1,86 +1,18 @@
 [English](README.md) | **한국어**
 
+## 목표 구조
+
+![Secret MCP 목표 구조](docs/assets/target-architecture.png)
+
+---
+
 # Secret MCP
 
-**근거 기반 웹 디자인 분석, 스크린샷-명세 변환, 프론트엔드 재구현 계획을 위한 MCP 서버입니다.**
-
-```bash
-npx -y secret-design-mcp
-```
-
-GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다. 각 파일 내부에는 제공된 시각 근거로 추적할 수 있는 페이지·라우트별 레이아웃, 내비게이션, 픽셀 좌표, 색상, 컴포넌트와 반응형 명세가 들어갑니다.
+GDWEB에서 최근 디자인 레퍼런스를 검색하고, **검색 결과 하나마다 별도의 LLM 요청과 별도의 `DESIGN_INDEX` 파일을 생성하는** 로컬 MCP(Model Context Protocol) 서버입니다. 각 파일 내부에는 확인 가능한 페이지·라우트별 레이아웃, 내비게이션, 픽셀 좌표, 색상, 컴포넌트와 반응형 명세가 들어갑니다.
 
 `Secret MCP`라는 이름은 비밀 기능이나 비공개 데이터를 제공한다는 뜻이 아닙니다. 비공개 저장소에서 디자인 사이트를 기반으로 MCP를 만들 수 있을지 실험하면서 붙인 프로젝트명입니다. 현재 프로젝트의 목적은 공개된 디자인 레퍼런스에서 재구현 가능한 구조적 근거를 추출하고, LLM이 새 프로젝트에 적용할 수 있는 작품별 명세로 만드는 것입니다.
 
 여러 작품의 이미지와 설명을 한 LLM 문맥이나 한 문서에 합치지 않습니다. 서버가 검색 결과를 내부에서 순서대로 처리하며, 작품마다 독립된 MCP `sampling/createMessage` 요청을 만들고 작품별 파일을 저장한 뒤 다음 작품으로 넘어갑니다. 별도 로컬 웹 프로그램에서는 작품을 하나씩 선택해 사용 근거, 측정 색상·좌표, LLM 계약, 생성 기록과 최종 문서를 확인하고 다음 검색의 제외 목록을 관리할 수 있습니다.
-
-## 연구 노트
-
-> **MCP Sampling을 이용한 근거 격리형 멀티모달 디자인 분석**
->
-> 워킹 페이퍼 및 구현 보고서 · Secret MCP v0.6.0 · 동료평가 전
-
-### 초록
-
-Secret MCP는 공개 웹페이지 스크린샷을 구현 지향적 디자인 명세로 변환하는 감사 가능한 파이프라인입니다. 시스템은 데스크톱·모바일 시각 근거를 준비하고, 자르기 좌표와 대표 픽셀 색상을 기록한 뒤, 레퍼런스마다 MCP 클라이언트 sampling을 한 번씩 호출합니다. 여러 디자인 레퍼런스를 하나의 프롬프트로 합치는 방식과 달리 Secret MCP는 레퍼런스 ID를 요청 경계이자 산출물 경계로 사용합니다. 레퍼런스 하나는 sampling 요청 하나, 요청 계약 하나, `DESIGN_INDEX` 문서 하나에 대응합니다. 각 요청은 `includeContext: none`을 요구하며 라우트, 기하 구조, 컴포넌트, 디자인 토큰, 반응형 동작, 접근성, 구현 작업, 인수 조건, 불확실성을 다루는 동일한 19개 섹션 명세 계약을 사용합니다. 이 보고서는 프로토콜 수준의 격리와 산출물 생성을 평가하며 특정 언어 모델·프롬프트·재구현 방법의 우월성을 주장하지 않습니다. 라이브 smoke test로 요청 경계를 검증하고, 보존된 3개 레퍼런스 실행 기록으로 기술 통계와 정성 구현 사례를 제시합니다.
-
-### 연구 질문
-
-| 질문 | 현재 근거 | 상태 |
-| --- | --- | --- |
-| **RQ1.** MCP 디자인 분석 도구가 레퍼런스별 요청 격리를 유지할 수 있는가? | 교차 레퍼런스 ID 검사와 출력 파일 검사를 포함한 라이브 sampling smoke test | 테스트 범위에서 검증 |
-| **RQ2.** 스크린샷을 감사 가능한 공간·색상·문서 산출물로 변환할 수 있는가? | 근거 manifest, 계약, 생성 문서가 보존된 3개 레퍼런스 실행 기록 | 기술적으로 확인 |
-| **RQ3.** 생성된 명세로 구별되는 프론트엔드 구현을 안내할 수 있는가? | AEROFLOW 정성 사례 | 예비 결과, 통제 비교 없음 |
-
-### 형식 모델
-
-레퍼런스 `r_i`의 준비된 근거 집합은 이미지 타일 `I`, crop 경계 `B`, 대표 색상 측정 `P`, 원본 메타데이터 `M`으로 구성됩니다. 고정 명세 계약은 `C`, 독립 요청과 결과 문서는 각각 `q_i`, `D_i`입니다.
-
-```text
-E_i = { I_i,k, B_i,k, P_i,k, M_i }
-q_i = sampling/createMessage(C, E_i; includeContext = none)
-D_i = G_theta(q_i)
-
-References(q_i) = { r_i }
-For every i != j: referenceId(r_j) is absent from q_i
-```
-
-준비된 타일 안에서 측정한 좌표는 다음 식으로 원본 스크린샷 좌표에 대응합니다.
-
-```text
-x_source = (cropLeft + x_tile) / scaleX
-y_source = (cropTop  + y_tile) / scaleY
-```
-
-이는 통계적 독립성 주장이 아니라 실행 수준의 격리 불변식입니다. 서버와 smoke test는 요청 내용과 산출물을 검사할 수 있지만, 임의의 외부 모델 제공자가 MCP 메시지 밖에서 무엇을 보존하는지까지 증명하지는 못합니다.
-
-## 실증 결과
-
-### 프로토콜 격리
-
-![그림 1. 두 GDWEB 레퍼런스가 두 MCP sampling 요청과 두 출력 문서에 일대일 대응하는 레퍼런스 ID 행렬과 실행 흐름.](docs/assets/results/fig1-protocol-isolation.svg)
-
-*그림 1.* 2026-08-22 `금융` 검색어로 실행한 라이브 smoke test입니다(`gdweb-26905` 제외 후 표본 레퍼런스 `n = 2`). 각 요청에는 자기 레퍼런스 ID와 시각 근거만 있었고 다른 표본 레퍼런스 ID는 없었으며 `includeContext: none`이었습니다. 결과는 서로 다른 Markdown 파일 두 개였습니다. 이 검사는 관측 가능한 요청 구성과 파일 분리를 검증하며 프로토콜 밖 모델 메모리 동작을 검증하지 않습니다.
-
-### 보존 실행 기록 측정
-
-![그림 2. 세 레퍼런스의 근거 타일링, 이미지 payload, 대표 색상 측정, 문서 크기, 19개 섹션 제목 포함 여부를 분석한 4개 패널.](docs/assets/results/fig2-recorded-run-measurements.svg)
-
-*그림 2.* 보존된 실행 `2026-07-29T15-54-10-483Z-5c70317e`의 기술 통계입니다(레퍼런스 `n = 3`). 816.9 decimal KB의 근거 이미지 12개와 대표 색상 측정 96개를 준비했습니다. 생성된 `DESIGN_INDEX` 문서 3개의 합계는 공백 구분 토큰 27,391개와 187.0 decimal KB입니다. 모든 문서에 1–19번 제목이 있지만 제목 존재가 의미적 정확성을 뜻하지는 않습니다.
-
-### 정성 사례
-
-![그림 3. 실제 Secret MCP 근거 뷰어, 레퍼런스별 DESIGN_INDEX, 명세 기반 AEROFLOW 구현.](docs/assets/results/fig3-qualitative-case-study.svg)
-
-*그림 3.* GDWEB 근거 뷰어에서 대한항공 `DESIGN_INDEX`, AEROFLOW 구현으로 이어지는 보존 실행 추적입니다. AEROFLOW는 새 브랜드, 콘텐츠, 이미지와 기능을 의도적으로 사용했습니다. 이 사례는 명세 활용 예시이며 통제된 시각 충실도 비교가 아닙니다.
-
-### 해석과 한계
-
-- 라이브 격리 결과는 `n = 2`, 보존 산출물 분석은 `n = 3`입니다. 디자인 품질이나 모델 성능을 일반화할 수 없습니다.
-- 현재 평가에는 대조군, 사람 평가, 반복 실험, 신뢰 구간, screenshot-to-code baseline 비교가 없습니다.
-- 대표 색상은 크기 조정, JPEG 정규화, 채널 양자화 이후 측정됩니다. 스크린샷 근거이지 원본 웹사이트 CSS 토큰의 증거가 아닙니다.
-- 19/19 결과는 필수 제목의 존재만 측정합니다. 사실 근거성, 좌표 오차, 색상 차이, 반응형 동작, 구현 충실도는 별도 benchmark가 필요합니다.
-- 정성 구현은 가능성 사례이며 Secret MCP가 재구현 품질을 높인다는 증거가 아닙니다.
 
 ## 사용 방법
 
@@ -562,13 +494,6 @@ npm run smoke:gdweb-isolation
 npm run web
 ```
 
-보존된 manifest와 smoke test snapshot에서 연구 도판을 다시 생성하려면 다음을 실행합니다.
-
-```bash
-python3 -m pip install -r scripts/requirements-figures.txt
-python3 scripts/generate-readme-figures.py
-```
-
 격리 smoke test는 sampling을 지원하는 가짜 MCP 클라이언트를 연결해 다음을 검증합니다.
 
 - 검색 결과 수와 sampling 요청 수가 같은지
@@ -608,27 +533,3 @@ python3 scripts/generate-readme-figures.py
 - [꾸블랙치킨 DESIGN_INDEX](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26853.md)
 - [대한항공 DESIGN_INDEX 명세서](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/documents/DESIGN_INDEX_gdweb-27294.md)
 - [대한항공 독립 요청 계약](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/contracts/gdweb-27294.md)
-
-## 관련 연구와 참고문헌
-
-Secret MCP는 멀티모달 UI 이해와 screenshot-to-code 연구에 인접한 구현 산출물입니다. 아직 아래 연구의 데이터셋이나 평가 지표로 Secret MCP를 비교하지 않았으므로, 해당 논문의 결과를 Secret MCP의 결과로 해석하면 안 됩니다.
-
-1. Chenglei Si, Yanzhe Zhang, Ryan Li, Zhengyuan Yang, Ruibo Liu, Diyi Yang. **Design2Code: Benchmarking Multimodal Code Generation for Automated Front-End Engineering.** NAACL 2025. 실제 웹페이지 screenshot-to-code 평가와 시각·요소 수준 지표를 제시합니다. [논문](https://aclanthology.org/2025.naacl-long.199/)
-2. Bryan Wang, Gang Li, Xin Zhou, Zhourong Chen, Tovi Grossman, Yang Li. **Screen2Words: Automatic Mobile UI Summarization with Multimodal Learning.** UIST 2021. 스크린샷, 텍스트, 구조, UI 의미를 결합하는 표현을 연구합니다. [논문](https://arxiv.org/abs/2108.03353)
-3. Jing Yu Koh, Robert Lo, Lawrence Jang, Vikram Duvvur, Ming Chong Lim, Po-Yu Huang, Graham Neubig, Shuyan Zhou, Ruslan Salakhutdinov, Daniel Fried. **VisualWebArena: Evaluating Multimodal Agents on Realistic Visually Grounded Web Tasks.** ACL 2024. 시각 근거 기반 웹 에이전트 평가의 중요성과 난점을 다룹니다. [논문](https://aclanthology.org/2024.acl-long.50/)
-4. Model Context Protocol. **Sampling specification.** 요청 메시지, 모델 선호, 토큰 예산, context 제어를 포함한 클라이언트 중개 `sampling/createMessage`를 정의합니다. [명세](https://modelcontextprotocol.io/specification/2025-11-25/client/sampling)
-
-## 인용
-
-Secret MCP는 현재 동료평가 논문이 아니라 연구 노트가 포함된 소프트웨어입니다.
-
-```bibtex
-@software{jo2026secretmcp,
-  author  = {{조영진}},
-  title   = {Secret MCP: Evidence-Isolated Multimodal Design Analysis through MCP Sampling},
-  year    = {2026},
-  version = {0.6.0},
-  url     = {https://github.com/yyeongjin/secret_mcp},
-  note    = {Software artifact and working implementation report}
-}
-```

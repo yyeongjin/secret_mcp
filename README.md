@@ -1,5 +1,11 @@
 **English** | [한국어](README.ko.md)
 
+## Target Architecture
+
+![Secret MCP target architecture](docs/assets/target-architecture.png)
+
+---
+
 # Secret MCP
 
 **An evidence-grounded MCP server for web design analysis, screenshot-to-specification workflows, and frontend reconstruction planning.**
@@ -58,19 +64,42 @@ This is an operational isolation invariant, not a claim of statistical independe
 
 ### Protocol Isolation
 
-![Figure 1. Reference-ID incidence matrix and one-to-one mapping from two GDWEB references to two MCP sampling requests and two output documents.](docs/assets/results/fig1-protocol-isolation.svg)
+```mermaid
+flowchart LR
+    R1["gdweb-26522"] --> Q1["Request 1<br/>5 evidence images<br/>includeContext: none"] --> D1["DESIGN_INDEX_gdweb-26522.md"]
+    R2["gdweb-24516"] --> Q2["Request 2<br/>4 evidence images<br/>includeContext: none"] --> D2["DESIGN_INDEX_gdweb-24516.md"]
+```
+
+| Sampling request | `gdweb-26522` present | `gdweb-24516` present | Output documents |
+| --- | ---: | ---: | ---: |
+| Request 1 | 1 | 0 | 1 |
+| Request 2 | 0 | 1 | 1 |
 
 *Figure 1.* Live smoke test recorded on 2026-08-22 using the query `금융` (`n = 2` sampled references after excluding `gdweb-26905`). Each request contained its own reference ID and visual evidence, no other sampled reference ID, and `includeContext: none`; the run produced two distinct Markdown files. The test verifies observable request composition and file separation, not model-memory behavior outside the protocol.
 
 ### Recorded Run Measurements
 
-![Figure 2. Four-panel analysis of evidence tiling, image payload, representative-color measurements, document size, and 19-section heading coverage for three references.](docs/assets/results/fig2-recorded-run-measurements.svg)
+```mermaid
+xychart-beta
+    title "Prepared evidence images per reference"
+    x-axis ["gdweb-27294", "gdweb-25378", "gdweb-24234"]
+    y-axis "Evidence images" 0 --> 5
+    bar [3, 4, 5]
+```
+
+| Reference | Desktop source height | Prepared images | Image payload | Color measurements | Document tokens | Document size | Required headings |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `gdweb-27294` | 2,675px | 3 | 126.6KB | 24 | 7,921 | 54.0KB | 19/19 |
+| `gdweb-25378` | 7,043px | 4 | 302.5KB | 32 | 9,953 | 69.8KB | 19/19 |
+| `gdweb-24234` | 7,832px | 5 | 387.8KB | 40 | 9,517 | 63.2KB | 19/19 |
 
 *Figure 2.* Descriptive measurements from preserved run `2026-07-29T15-54-10-483Z-5c70317e` (`n = 3` references). The run prepared 12 evidence images totaling 816.9 decimal KB and recorded 96 representative-color measurements. It produced three `DESIGN_INDEX` documents totaling 27,391 whitespace-delimited tokens and 187.0 decimal KB. All three contain headings 1–19; heading presence does not establish semantic correctness.
 
 ### Qualitative Case Study
 
-![Figure 3. Actual Secret MCP evidence viewer, per-reference DESIGN_INDEX, and the specification-driven AEROFLOW implementation.](docs/assets/results/fig3-qualitative-case-study.svg)
+| (a) Evidence and measurements | (b) Per-reference `DESIGN_INDEX` | (c) Specification-driven implementation |
+| --- | --- | --- |
+| ![Actual Secret MCP evidence viewer](tmp/showcase/aviation-godot/screenshots/02-evidence-view.png) | ![Actual per-reference DESIGN_INDEX](tmp/showcase/aviation-godot/screenshots/01-design-index-view.png) | ![Actual AEROFLOW implementation](tmp/showcase/aviation-godot/screenshots/05-generated-site-hero.png) |
 
 *Figure 3.* A preserved qualitative trace from the GDWEB evidence viewer to the generated Korean Air `DESIGN_INDEX` and then to AEROFLOW. AEROFLOW intentionally introduces new branding, content, imagery, and functionality; this example illustrates specification use and is not a controlled visual-fidelity comparison.
 
@@ -560,13 +589,6 @@ npm run build
 npm run lint
 npm run smoke:gdweb-isolation
 npm run web
-```
-
-Regenerate the research figures from the stored manifest and smoke-test snapshot with:
-
-```bash
-python3 -m pip install -r scripts/requirements-figures.txt
-python3 scripts/generate-readme-figures.py
 ```
 
 The isolation smoke test connects a mock MCP client that supports sampling and verifies the following behavior.
