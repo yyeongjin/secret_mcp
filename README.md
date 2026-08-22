@@ -527,20 +527,6 @@ The server currently exposes five MCP tools.
 
 Use `generate-gdweb-design-indexes` for design planning, layout analysis, implementation specifications, and `DESIGN_INDEX` requests. Use `search-gdweb-designs` only for lightweight list requests.
 
-## Boundary Between Design and General Search
-
-```mermaid
-flowchart TD
-    MCP["Secret MCP"] --> GDWEB["Design: direct GDWEB search + isolated sampling"]
-    MCP --> General["General information: SearchEngine"]
-    General --> Bing["Bing"]
-    General --> Brave["Brave"]
-    General --> DDG["DuckDuckGo"]
-    General --> Extractor["Extract page content when needed"]
-```
-
-Bing, Brave, DuckDuckGo, and Playwright are used only by the general-search path. They do not participate in GDWEB search or image collection.
-
 ## Source Structure
 
 ```text
