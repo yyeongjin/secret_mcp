@@ -533,3 +533,7 @@ npm run web
 - [꾸블랙치킨 DESIGN_INDEX](docs/generated/food-godot-20260803/DESIGN_INDEX_gdweb-26853.md)
 - [대한항공 DESIGN_INDEX 명세서](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/documents/DESIGN_INDEX_gdweb-27294.md)
 - [대한항공 독립 요청 계약](tmp/design-index/aviation-godot-20260730/.secret-mcp-runs/2026-07-29T15-54-10-483Z-5c70317e/contracts/gdweb-27294.md)
+
+## 연구 논문
+
+- **Secret MCP: Evidence-Bounded and Context-Isolated Design Specification Generation from Web Screenshots** — [arXiv:2608.24944](https://arxiv.org/abs/2608.24944)

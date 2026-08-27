@@ -640,3 +640,7 @@ Secret MCP is currently software with a working research note, not a peer-review
   note    = {Software artifact and working implementation report}
 }
 ```
+
+## Research Paper
+
+- **Secret MCP: Evidence-Bounded and Context-Isolated Design Specification Generation from Web Screenshots** — [arXiv:2608.24944](https://arxiv.org/abs/2608.24944)
